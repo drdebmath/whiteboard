@@ -166,13 +166,36 @@ function SetupModal({ initialConfig, onClose, onDone, onDisconnect }) {
             />
           </div>
           <div className="modal-field">
-            <label>Gist ID</label>
+            <label>
+              Gist ID
+              <span className="help-hint" tabIndex={0} role="button" aria-label="How to sync across devices">
+                ?
+                <span className="help-tooltip">
+                  <strong>Sync across devices:</strong> leave this blank on the
+                  first device to create a new private gist. On every other
+                  device, paste the <strong>same Gist ID</strong> here so they
+                  share one gist. The ID is the long code in the gist URL
+                  (<code>gist.github.com/&lt;user&gt;/<strong>&lt;id&gt;</strong></code>).
+                  Leaving it blank again creates a separate, duplicate gist.
+                </span>
+              </span>
+            </label>
             <input
               value={gistId}
               onChange={(e) => setGistId(e.target.value)}
               placeholder="Leave blank to create a private Gist"
               className="modal-input"
             />
+            {initialConfig?.gistId && (
+              <a
+                className="modal-gist-link"
+                href={`https://gist.github.com/${initialConfig.gistId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open this gist ↗ — copy its ID to use on other devices
+              </a>
+            )}
           </div>
           <div className="modal-field">
             <label>Filename</label>
@@ -584,13 +607,39 @@ function App() {
     setSyncStatus("Syncing…");
     try {
       const mergedConfig = { ...syncConfig, ...config };
-      const nextConfig = mergedConfig.gistId ? mergedConfig : await createRemote(state, mergedConfig);
+      const connectingExisting = !!mergedConfig.gistId;
+      const nextConfig = connectingExisting ? mergedConfig : await createRemote(state, mergedConfig);
       setSyncConfigState(nextConfig);
       setSyncConfig(nextConfig);
       hasLoadedRemoteRef.current = true;
       // If the filename changed on an existing gist, drop the old file too.
       const oldFilename = syncConfig.gistId === nextConfig.gistId ? syncConfig.filename : null;
-      await pushRemote(nextConfig, state, oldFilename);
+
+      if (connectingExisting) {
+        // Connecting to an existing gist: pull first and resolve by last-modified
+        // time so a stale/empty local copy can't clobber newer remote data.
+        const remoteState = await fetchRemote(nextConfig);
+        const localNow = stateRef.current;
+        if (remoteState && remoteState.academic) {
+          const remoteAt = remoteState.meta?.updatedAt || 0;
+          const localAt = localNow.meta?.updatedAt || 0;
+          if (remoteAt > localAt) {
+            setState(remoteState);
+            // Rewrite under the new filename / drop the old file if it was renamed.
+            if (oldFilename && oldFilename !== nextConfig.filename) {
+              await pushRemote(nextConfig, remoteState, oldFilename);
+            }
+          } else {
+            // Local is newer (or equal): keep local, push it up.
+            await pushRemote(nextConfig, localNow, oldFilename);
+          }
+        } else {
+          // Remote is empty or unreadable under this filename: safe to seed it.
+          await pushRemote(nextConfig, localNow, oldFilename);
+        }
+      } else {
+        // createRemote already wrote local state into the new gist.
+      }
       setSyncStatus("Synced");
       setTimeout(() => setSyncStatus(""), 2000);
     } catch (err) {

@@ -2,6 +2,14 @@
 
 A local-first personal dashboard for academic tasks, household lists, health habits, reminders, and optional private GitHub Gist sync.
 
+Repository: <https://github.com/drdebmath/whiteboard>
+
+You can use it on the web at <https://drdebmath.github.io/whiteboard/>, or run it locally:
+
+```bash
+git clone https://github.com/drdebmath/whiteboard.git
+```
+
 ## Use
 
 Serve this folder with a static server (required for Gist sync and reliable script loading), then open the app:

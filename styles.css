@@ -1562,6 +1562,15 @@ html:not(.dark) .academic-select { color-scheme: light; }
   padding: 10px 12px;
   margin-bottom: 14px;
 }
+
+.modal-gist-link {
+  font-size: 11.5px;
+  color: var(--accent);
+  text-decoration: none;
+  margin-top: 2px;
+}
+
+.modal-gist-link:hover { text-decoration: underline; }
 .modal-error {
   font-size: 13px;
   color: var(--danger);
