@@ -550,6 +550,12 @@ function App() {
     for (const r of state.health.reminders) {
       if ((r.text || "").toLowerCase().includes(q)) results.push({ cat: "health", type: "Reminder", text: r.text, id: r.id });
     }
+    for (const cat of ["academic", "household", "health"]) {
+      for (const g of state[cat].goals || []) {
+        const label = `${g.text || ""} ${g.note || ""}`;
+        if (label.toLowerCase().includes(q)) results.push({ cat, type: "Goal", text: g.text, id: g.id });
+      }
+    }
 
     return results;
   }, [searchQuery, state]);
@@ -720,6 +726,11 @@ function App() {
               items={s.readings || []}
               onChange={(readings) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, readings } }))}
             />
+            <GoalsPanel
+              items={s.goals || []}
+              placeholder="e.g. publish a textbook…"
+              onChange={(goals) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, goals } }))}
+            />
           </div>
         );
 
@@ -738,6 +749,11 @@ function App() {
               items={s.shopping}
               onChange={(shopping) => safeUpdate((prev) => ({ ...prev, household: { ...prev.household, shopping } }))}
             />
+            <GoalsPanel
+              items={s.goals || []}
+              placeholder="e.g. declutter the garage…"
+              onChange={(goals) => safeUpdate((prev) => ({ ...prev, household: { ...prev.household, goals } }))}
+            />
           </div>
         );
 
@@ -751,6 +767,11 @@ function App() {
             <ReminderPanel
               items={s.reminders}
               onChange={(reminders) => safeUpdate((prev) => ({ ...prev, health: { ...prev.health, reminders } }))}
+            />
+            <GoalsPanel
+              items={s.goals || []}
+              placeholder="e.g. fix back pain, stop snoring…"
+              onChange={(goals) => safeUpdate((prev) => ({ ...prev, health: { ...prev.health, goals } }))}
             />
           </div>
         );

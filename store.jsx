@@ -20,9 +20,9 @@ const MS = {
 };
 
 const EMPTY_STATE = {
-  academic: { projects: [], deadlines: [], teaching: [], service: [], readings: [] },
-  household: { chores: [], reminders: [], shopping: [] },
-  health: { habits: [], reminders: [] },
+  academic: { projects: [], deadlines: [], teaching: [], service: [], readings: [], goals: [] },
+  household: { chores: [], reminders: [], shopping: [], goals: [] },
+  health: { habits: [], reminders: [], goals: [] },
   meta: { updatedAt: 0 },
 };
 
@@ -188,6 +188,16 @@ function normalizeState(parsed) {
 
   const h = parsed.health || {};
 
+  // Aspirational goals — distinct from dated deadlines. Shared shape across tabs.
+  const normalizeGoals = (list) =>
+    (Array.isArray(list) ? list : []).map((g) => ({
+      id: g.id || uid(),
+      text: String(g.text || "").trim(),
+      note: String(g.note || "").trim(),
+      achieved: !!g.achieved,
+      created: g.created || g.createdAt || Date.now(),
+    }));
+
   return {
     academic: {
       ...EMPTY_STATE.academic,
@@ -209,6 +219,7 @@ function normalizeState(parsed) {
         done: !!r.done,
         created: r.created || r.createdAt || Date.now(),
       })),
+      goals: normalizeGoals(ac.goals),
     },
     household: {
       ...EMPTY_STATE.household,
@@ -226,6 +237,7 @@ function normalizeState(parsed) {
         bought: !!s.bought,
         created: s.created || s.createdAt || Date.now(),
       })),
+      goals: normalizeGoals(hh.goals),
     },
     health: {
       ...EMPTY_STATE.health,
@@ -242,6 +254,7 @@ function normalizeState(parsed) {
         done: !!r.done,
         created: r.created || r.createdAt || Date.now(),
       })),
+      goals: normalizeGoals(h.goals),
     },
     meta: { updatedAt: Number(parsed.meta?.updatedAt) || 0 },
   };

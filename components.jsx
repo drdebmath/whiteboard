@@ -762,6 +762,73 @@ const ChoresPanel = memo(function ChoresPanel({ items, onChange }) {
   );
 });
 
+/* ─── GoalsPanel ─── */
+// Aspirational goals — open-ended intentions ("fix back pain", "publish a book"),
+// not dated tasks. Each goal has a title, an optional note, and an achieved flag.
+
+const GoalsPanel = memo(function GoalsPanel({ items = [], onChange, placeholder = 'An aspiration…' }) {
+  const [text, setText] = useState('');
+
+  const add = () => {
+    const t = text.trim();
+    if (!t) return;
+    onChange([...items, { id: uid(), text: t, note: '', achieved: false, created: Date.now() }]);
+    setText('');
+  };
+
+  const update = (id, patch) => onChange(items.map(g => g.id === id ? { ...g, ...patch } : g));
+  const remove = (id) => onChange(items.filter(g => g.id !== id));
+
+  const active = items.filter(g => !g.achieved);
+  const achieved = items.filter(g => g.achieved);
+
+  return (
+    <div className="panel">
+      <div className="panel-header">Goals</div>
+      <div className="todo-input-row">
+        <input
+          className="todo-input"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') add(); }}
+          placeholder={placeholder}
+        />
+        <button className="btn-add" aria-label="Add goal" onClick={add}>+</button>
+      </div>
+      {!items.length && <div className="panel-empty">No goals yet — dream big</div>}
+      <ul className="goal-list">
+        {[...active, ...achieved].map((g) => (
+          <li key={g.id} data-mb-id={g.id} className={'goal-item' + (g.achieved ? ' achieved' : '')}>
+            <div className="goal-row">
+              <button
+                type="button"
+                className={'goal-star' + (g.achieved ? ' achieved' : '')}
+                onClick={() => update(g.id, { achieved: !g.achieved })}
+                aria-pressed={g.achieved}
+                title={g.achieved ? 'Achieved — mark as ongoing' : 'Mark as achieved'}
+              >
+                {g.achieved ? '★' : '☆'}
+              </button>
+              <input
+                className="goal-text-input"
+                value={g.text}
+                onChange={(e) => update(g.id, { text: e.target.value })}
+                placeholder="Goal…"
+              />
+              <button className="btn-delete" aria-label="Delete goal" onClick={() => remove(g.id)}>×</button>
+            </div>
+            <AutoTextarea
+              value={g.note}
+              onChange={(t) => update(g.id, { note: t })}
+              placeholder="Why it matters, or how to get there…"
+            />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+});
+
 /* ─── exports to window ─── */
 
 Object.assign(window, {
@@ -771,6 +838,7 @@ Object.assign(window, {
   ShoppingPanel,
   HabitPanel,
   ChoresPanel,
+  GoalsPanel,
   formatWhen,
   relTime,
 });
