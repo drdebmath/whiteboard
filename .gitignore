@@ -1,0 +1,6 @@
+# Personal board data — never commit
+_seed-data.json
+.thumbnail
+
+# OS / editor cruft
+.DS_Store
