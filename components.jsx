@@ -188,6 +188,37 @@ function EditButton({ onClick, title = 'Edit' }) {
   );
 }
 
+// Keeps the raw text in local state so typing commas/spaces isn't fought by
+// the parse round-trip; the parsed array is propagated up on each change.
+function CollaboratorsInput({ value = [], onChange }) {
+  const [text, setText] = useState(value.join(', '));
+  // Track what our own text currently parses to, so we ignore the echo of our
+  // own edits (new array reference, same content) and only re-sync when the
+  // value changes for real elsewhere (e.g. switching projects, remote sync).
+  const parsedRef = useRef(value.join('\n'));
+
+  const incoming = value.join('\n');
+  if (incoming !== parsedRef.current) {
+    parsedRef.current = incoming;
+    setText(value.join(', '));
+  }
+
+  return (
+    <input
+      className="project-collab-input"
+      value={text}
+      onChange={(e) => {
+        const next = e.target.value;
+        setText(next);
+        const arr = next.split(',').map(s => s.trim()).filter(Boolean);
+        parsedRef.current = arr.join('\n');
+        onChange(arr);
+      }}
+      placeholder="Name, Name, …"
+    />
+  );
+}
+
 const ProjectCard = memo(function ProjectCard({ proj, isOpen, onToggle, onUpdate, onRemove }) {
   const displayName = proj.name || 'New Project';
   const collabCount = (proj.collaborators || []).length;
@@ -257,11 +288,9 @@ const ProjectCard = memo(function ProjectCard({ proj, isOpen, onToggle, onUpdate
           </div>
           <div className="project-section">
             <label>Collaborators</label>
-            <input
-              className="project-collab-input"
-              value={(proj.collaborators || []).join(', ')}
-              onChange={(e) => onUpdate({ collaborators: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-              placeholder="Name, Name, …"
+            <CollaboratorsInput
+              value={proj.collaborators || []}
+              onChange={(c) => onUpdate({ collaborators: c })}
             />
           </div>
           <div className="project-section">

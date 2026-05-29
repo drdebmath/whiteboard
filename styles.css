@@ -742,15 +742,31 @@ html:not(.dark) .datetime-input { color-scheme: light; }
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
-.project-done-tick {
+.project-done-toggle {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
-  font-size: 10px;
-  color: var(--household);
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: transparent;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.project-done-toggle:hover {
+  border-color: var(--line-2);
+  color: var(--muted);
+}
+.project-done-toggle.done {
+  border-color: var(--household);
+  background: var(--household);
+  color: #fff;
 }
 .project-title-row {
   display: flex;

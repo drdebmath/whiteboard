@@ -10,6 +10,27 @@ const {
   MS,
 } = window.MyBoardStore;
 
+// Returns true if `a` and `b` differ only in string-valued leaves (i.e. a pure
+// text edit). Structural changes — array length, booleans, numbers — return
+// false, so the undo toast only fires on discrete actions, not on typing.
+function isTextOnlyChange(a, b) {
+  if (a === b) return true;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    return a.every((v, i) => isTextOnlyChange(v, b[i]));
+  }
+  if (a && b && typeof a === "object" && typeof b === "object") {
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+    for (const k of keys) {
+      if (k === "meta") continue;
+      if (!isTextOnlyChange(a[k], b[k])) return false;
+    }
+    return true;
+  }
+  // Differing leaves: a text change only if both sides are strings.
+  return typeof a === "string" && typeof b === "string";
+}
+
 // ─── Categories ───
 
 const CATEGORIES = [
@@ -435,16 +456,19 @@ function App() {
   // ─── safeUpdate (push undo before state change) ───
 
   const safeUpdate = useCallback((updater) => {
-    undoStackRef.current.push(structuredClone(stateRef.current));
+    const prevState = stateRef.current;
+    undoStackRef.current.push(structuredClone(prevState));
     if (undoStackRef.current.length > 10) undoStackRef.current.shift();
-    setState((prev) => {
-      const next = typeof updater === "function" ? updater(prev) : updater;
-      // Stamp the modification time so sync can resolve which side is newer.
-      return { ...next, meta: { ...(next.meta || {}), updatedAt: Date.now() } };
-    });
-    setShowUndo(true);
-    clearTimeout(undoTimerRef.current);
-    undoTimerRef.current = setTimeout(() => setShowUndo(false), 4000);
+    const computed = typeof updater === "function" ? updater(prevState) : updater;
+    // Stamp the modification time so sync can resolve which side is newer.
+    setState({ ...computed, meta: { ...(computed.meta || {}), updatedAt: Date.now() } });
+    // Surface the undo toast only for discrete actions (add/remove/toggle/date),
+    // not character-by-character text edits.
+    if (!isTextOnlyChange(prevState, computed)) {
+      setShowUndo(true);
+      clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = setTimeout(() => setShowUndo(false), 4000);
+    }
   }, []);
 
   // ─── Undo ───
