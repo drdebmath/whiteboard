@@ -41,12 +41,6 @@ const CATEGORIES = [
 
 // ─── Collect upcoming items ───
 
-function collectUpcoming(state) {
-  // Backwards-compatible single-item API: prefer soonest future, else nearest overdue.
-  const pair = collectUpcomingPair(state);
-  return pair.nextUp || pair.nearestOverdue || null;
-}
-
 function collectUpcomingPair(state) {
   // Return both the soonest future item (`nextUp`) and the most recent
   // overdue item (`nearestOverdue`). Items follow the shape { text, cat, kind, ts }.
@@ -92,6 +86,18 @@ function formatNextWhen(ts) {
   if (diff < MS.MINUTE) return "now";
   // relTime (from components.jsx) gives "5m" / "3h" / "2d"; prefix with "in ".
   return `in ${window.relTime(diff)}`;
+}
+
+// "synced 0 seconds ago" / "synced 5 minutes ago" — full words, takes `now` so
+// it re-renders on the clock tick. Returns "" when there's been no sync yet.
+function syncedAgoLabel(ts, now) {
+  if (!ts) return "";
+  const diff = Math.max(0, now - ts);
+  const unit = (n, word) => `synced ${n} ${word}${n === 1 ? "" : "s"} ago`;
+  if (diff < MS.MINUTE) return unit(Math.floor(diff / MS.SECOND), "second");
+  if (diff < MS.HOUR)   return unit(Math.floor(diff / MS.MINUTE), "minute");
+  if (diff < MS.DAY)    return unit(Math.floor(diff / MS.HOUR), "hour");
+  return unit(Math.floor(diff / MS.DAY), "day");
 }
 
 // ─── Greeting ───
@@ -303,6 +309,7 @@ function App() {
   const [profileName, setProfileNameState] = useState(() => getProfileName() || "");
   const [syncConfig, setSyncConfigState] = useState(() => getSyncConfig());
   const [syncStatus, setSyncStatus] = useState("");
+  const [lastSyncedAt, setLastSyncedAt] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [showUndo, setShowUndo] = useState(false);
 
@@ -403,8 +410,8 @@ function App() {
           await pushRemote(syncConfig, localNow);
         }
         if (!cancelled) {
-          setSyncStatus("Synced");
-          setTimeout(() => setSyncStatus(""), 2000);
+          setLastSyncedAt(Date.now());
+          setSyncStatus("");
         }
       })
       .catch((err) => {
@@ -438,8 +445,8 @@ function App() {
       try {
         setSyncStatus("Syncing…");
         await pushRemote(cfg, s);
-        setSyncStatus("Synced");
-        setTimeout(() => setSyncStatus(""), 2000);
+        setLastSyncedAt(Date.now());
+        setSyncStatus("");
       } catch (err) {
         console.error("Sync failed:", err);
         setSyncStatus("Sync failed");
@@ -579,8 +586,8 @@ function App() {
     setSyncStatus("Pushing…");
     try {
       await pushRemote(syncConfig, state);
-      setSyncStatus("Pushed");
-      setTimeout(() => setSyncStatus(""), 2000);
+      setLastSyncedAt(Date.now());
+      setSyncStatus("");
     } catch (err) {
       console.error("Push failed:", err);
       setSyncStatus("Push failed");
@@ -670,8 +677,8 @@ function App() {
       } else {
         // createRemote already wrote local state into the new gist.
       }
-      setSyncStatus("Synced");
-      setTimeout(() => setSyncStatus(""), 2000);
+      setLastSyncedAt(Date.now());
+      setSyncStatus("");
     } catch (err) {
       console.error("Setup sync failed:", err);
       setSyncStatus("Sync failed");
@@ -709,6 +716,11 @@ function App() {
               items={s.deadlines}
               onChange={(deadlines) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, deadlines } }))}
             />
+            <GoalsPanel
+              items={s.goals || []}
+              placeholder="e.g. publish a textbook…"
+              onChange={(goals) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, goals } }))}
+            />
             <TeachingPanel
               items={s.teaching}
               onChange={(teaching) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, teaching } }))}
@@ -726,53 +738,56 @@ function App() {
               items={s.readings || []}
               onChange={(readings) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, readings } }))}
             />
-            <GoalsPanel
-              items={s.goals || []}
-              placeholder="e.g. publish a textbook…"
-              onChange={(goals) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, goals } }))}
-            />
           </div>
         );
 
       case "household":
         return (
           <div className="panels panels-household">
-            <ChoresPanel
-              items={s.chores}
-              onChange={(chores) => safeUpdate((prev) => ({ ...prev, household: { ...prev.household, chores } }))}
-            />
-            <ReminderPanel
-              items={s.reminders}
-              onChange={(reminders) => safeUpdate((prev) => ({ ...prev, household: { ...prev.household, reminders } }))}
-            />
-            <ShoppingPanel
-              items={s.shopping}
-              onChange={(shopping) => safeUpdate((prev) => ({ ...prev, household: { ...prev.household, shopping } }))}
-            />
-            <GoalsPanel
-              items={s.goals || []}
-              placeholder="e.g. declutter the garage…"
-              onChange={(goals) => safeUpdate((prev) => ({ ...prev, household: { ...prev.household, goals } }))}
-            />
+            <div className="panels-col">
+              <ChoresPanel
+                items={s.chores}
+                onChange={(chores) => safeUpdate((prev) => ({ ...prev, household: { ...prev.household, chores } }))}
+              />
+              <ShoppingPanel
+                items={s.shopping}
+                onChange={(shopping) => safeUpdate((prev) => ({ ...prev, household: { ...prev.household, shopping } }))}
+              />
+            </div>
+            <div className="panels-col">
+              <GoalsPanel
+                items={s.goals || []}
+                placeholder="e.g. declutter the garage…"
+                onChange={(goals) => safeUpdate((prev) => ({ ...prev, household: { ...prev.household, goals } }))}
+              />
+              <ReminderPanel
+                items={s.reminders}
+                onChange={(reminders) => safeUpdate((prev) => ({ ...prev, household: { ...prev.household, reminders } }))}
+              />
+            </div>
           </div>
         );
 
       case "health":
         return (
           <div className="panels panels-health">
-            <HabitPanel
-              items={s.habits}
-              onChange={(habits) => safeUpdate((prev) => ({ ...prev, health: { ...prev.health, habits } }))}
-            />
-            <ReminderPanel
-              items={s.reminders}
-              onChange={(reminders) => safeUpdate((prev) => ({ ...prev, health: { ...prev.health, reminders } }))}
-            />
-            <GoalsPanel
-              items={s.goals || []}
-              placeholder="e.g. fix back pain, stop snoring…"
-              onChange={(goals) => safeUpdate((prev) => ({ ...prev, health: { ...prev.health, goals } }))}
-            />
+            <div className="panels-col">
+              <HabitPanel
+                items={s.habits}
+                onChange={(habits) => safeUpdate((prev) => ({ ...prev, health: { ...prev.health, habits } }))}
+              />
+            </div>
+            <div className="panels-col">
+              <GoalsPanel
+                items={s.goals || []}
+                placeholder="e.g. fix back pain, stop snoring…"
+                onChange={(goals) => safeUpdate((prev) => ({ ...prev, health: { ...prev.health, goals } }))}
+              />
+              <ReminderPanel
+                items={s.reminders}
+                onChange={(reminders) => safeUpdate((prev) => ({ ...prev, health: { ...prev.health, reminders } }))}
+              />
+            </div>
           </div>
         );
 
@@ -818,6 +833,9 @@ function App() {
   const { nextUp, nearestOverdue } = collectUpcomingPair(state);
   const cat = CATEGORIES.find((c) => c.id === tab);
   const stats = computeStats(state, now);
+  // Transient status (Syncing…/failed) takes priority; otherwise the relative
+  // "synced X ago" label, recomputed each clock tick via `now`.
+  const syncText = syncStatus || syncedAgoLabel(lastSyncedAt, now.getTime());
 
   // Let the banner's visual weight track urgency: overdue is loud, within a
   // day is accented, anything further out stays calm.
@@ -857,7 +875,14 @@ function App() {
             )}
           </div>
           {storageError && <span className="sync-status sync-status-error">{storageError}</span>}
-          {syncStatus && <span className="sync-status">{syncStatus}</span>}
+          {/* Always rendered so it reserves its slot — fades in/out instead of
+              mounting/unmounting, which kept reflowing the view on every sync. */}
+          <span
+            className={"sync-status sync-status-quiet" + (syncText ? " is-visible" : "")}
+            aria-live="polite"
+          >
+            {syncText || " "}
+          </span>
         </div>
       </header>
 

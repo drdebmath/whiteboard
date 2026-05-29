@@ -260,10 +260,6 @@ function normalizeState(parsed) {
   };
 }
 
-function stateEquals(a, b) {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
-
 function loadLocal() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -418,7 +414,6 @@ window.MyBoardStore = {
   loadLocal,
   saveLocal,
   normalizeState,
-  stateEquals,
   getProfileName,
   setProfileName,
   getSyncConfig,

@@ -216,6 +216,15 @@ a { color: var(--accent); }
   border-radius: 999px;
   white-space: nowrap;
 }
+/* Quiet sync indicator: holds its space and gently fades, so the view below
+   never jumps as the status cycles Syncing… → Synced → (gone). */
+.sync-status-quiet {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.sync-status-quiet.is-visible {
+  opacity: 0.7;
+}
 .sync-status-error {
   color: var(--danger);
   border-color: color-mix(in oklch, var(--danger) 40%, transparent);
@@ -399,12 +408,42 @@ a { color: var(--accent); }
   break-inside: avoid;
   margin-bottom: var(--gap);
 }
-/* Health has only two panels — two columns keeps them from stranding a gap. */
-.panels-health { column-count: 2; }
+/* Household & Health use two flex columns: panel tops stay aligned (no multicol
+   balancing gap), and panels stack from the top filling space within a column. */
+.panels-household,
+.panels-health {
+  column-count: unset;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gap);
+}
+.panels-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+.panels-col > .panel { margin-bottom: 0; }
+
+/* Keep the two columns roughly balanced: a single long list scrolls within its
+   panel instead of stretching its column far past the other. */
+.panels-household .chore-list,
+.panels-household .todo-list,
+.panels-household .goal-list,
+.panels-health .habits-list,
+.panels-health .todo-list,
+.panels-health .goal-list {
+  max-height: 52vh;
+  overflow-y: auto;
+  /* room so the scrollbar doesn't overlap item content */
+  padding-right: 4px;
+  scrollbar-width: thin;
+}
 
 /* Academic uses a deliberate 2-column grid rather than masonry: Deadlines and
-   Teaching share the top row at half width each; Service, Projects and the
-   Reading list each break out to the full row. */
+   Goals share the top row at half width each; Teaching and Service share the
+   next row at half width; Projects and the Reading list each break out full. */
 .panels-academic {
   column-count: unset;
   display: grid;
@@ -413,14 +452,14 @@ a { color: var(--accent); }
   align-items: start;
 }
 .panels-academic > .panel { margin-bottom: 0; }
-.panels-academic > .panel:nth-child(3),  /* Service  */
-.panels-academic > .panel:nth-child(4),  /* Projects */
-.panels-academic > .panel:nth-child(5) { /* Reading  */
+.panels-academic > .panel:nth-child(5),  /* Projects */
+.panels-academic > .panel:nth-child(6) { /* Reading  */
   grid-column: 1 / -1;
 }
 
 @media (max-width: 980px) {
-  .panels, .panels-health { column-count: 2; }
+  .panels { column-count: 2; }
+  .panels-household, .panels-health { flex-direction: column; }
 }
 
 /* ── Panel ────────────────────────────────────────────────────────────── */
@@ -441,7 +480,7 @@ a { color: var(--accent); }
   border-color: var(--line-2);
 }
 /* Projects reads as the academic anchor: a touch more lift. */
-.panels-academic > .panel:nth-child(4) {
+.panels-academic > .panel:nth-child(5) {
   box-shadow: var(--panel-shadow-raised);
 }
 .panel-header {
@@ -467,6 +506,13 @@ a { color: var(--accent); }
 }
 /* Push any trailing control (add / clear button) to the right edge. */
 .panel-header > button { margin-left: auto; }
+/* When several controls share the header, group them at the right edge. */
+.panel-header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .panel-empty {
   color: var(--muted);
   font-size: 13px;
@@ -489,29 +535,19 @@ a { color: var(--accent); }
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .btn-add-inline:hover { color: var(--accent); border-color: var(--accent); }
-
-/* ── Progress bar (todo) ──────────────────────────────────────────────── */
-.progress-bar {
-  position: relative;
-  height: 6px;
+/* Small, low-chrome text button used for inline actions (Collapse all, Save…). */
+.panel-text-btn {
+  border: 1px solid var(--line);
+  border-radius: 7px;
   background: var(--surface-2);
-  border-radius: 999px;
-  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1;
+  padding: 5px 9px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-.progress-fill {
-  height: 100%;
-  background: var(--accent);
-  border-radius: 999px;
-  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.progress-label {
-  position: absolute;
-  right: 8px;
-  top: -18px;
-  font-size: 11px;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
+.panel-text-btn:hover { color: var(--accent); border-color: var(--accent); }
 
 /* ── Add-row inputs ───────────────────────────────────────────────────── */
 .todo-input-row {
@@ -615,7 +651,6 @@ html:not(.dark) .datetime-input { color-scheme: light; }
 .todo-item:hover .btn-delete,
 .reminder-item:hover .btn-delete,
 .reading-item:hover .btn-delete,
-.note-card:hover .btn-delete,
 .project-title-row:hover .btn-delete,
 .project-card:has(.project-details) .project-title-row .btn-delete,
 .habit-card:hover .btn-delete,
@@ -641,12 +676,12 @@ html:not(.dark) .datetime-input { color-scheme: light; }
 .btn-edit svg { display: block; }
 .btn-edit:hover { color: var(--accent); background: var(--accent-soft, var(--surface-2)); }
 .deadline-row .btn-edit,
-.teaching-row .btn-edit,
 .teaching-course-head .btn-edit,
+.chore-item .btn-edit,
 .service-card .btn-edit { opacity: 0.5; }
 .deadline-row:hover .btn-edit,
-.teaching-row:hover .btn-edit,
 .teaching-course-head:hover .btn-edit,
+.chore-item:hover .btn-edit,
 .service-card:hover .btn-edit { opacity: 1; }
 
 /* ── Reminders ────────────────────────────────────────────────────────── */
@@ -661,18 +696,7 @@ html:not(.dark) .datetime-input { color-scheme: light; }
 .reminder-item.soon .reminder-time { color: var(--accent); }
 .reminder-item.overdue { background: var(--danger-soft); }
 
-/* ── Notes ────────────────────────────────────────────────────────────── */
-.notes-list { display: flex; flex-direction: column; gap: 10px; }
-.note-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px 14px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-}
+/* ── Auto-textarea ────────────────────────────────────────────────────── */
 .auto-textarea {
   width: 100%;
   background: transparent;
@@ -686,13 +710,11 @@ html:not(.dark) .datetime-input { color-scheme: light; }
   min-height: 20px;
 }
 .auto-textarea::placeholder { color: var(--muted); }
-.note-time { font-size: 11px; color: var(--muted); }
-.note-card .btn-delete { position: absolute; top: 8px; right: 8px; }
 
 /* ── Projects ─────────────────────────────────────────────────────────── */
-/* In the full-width Projects panel, collapsed cards carry little info, so they
-   tile into two compact columns. An open card holds a lot (tasks,
-   collaborators, notes, links) and breaks out to span the whole row. */
+/* In the full-width Projects panel, cards tile into two compact columns. An open
+   card holds a lot (tasks, collaborators, notes, links) but stays in its own
+   column, growing taller, so expanding one card never disturbs the other. */
 .projects-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(min(100%, 260px), 1fr));
@@ -700,21 +722,9 @@ html:not(.dark) .datetime-input { color-scheme: light; }
   gap: 9px;
   align-items: start;
 }
-.project-card.open { grid-column: 1 / -1; }
-/* Inside an open card, lay the detail sections out in responsive columns so the
-   full width is used rather than one tall stack. The notes section, which can
-   run long, spans the full width. */
-.project-card.open .project-details {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-  gap: 12px 18px;
-  align-items: start;
-}
-.project-card.open .project-details > .project-section:nth-child(1), /* name  */
-.project-card.open .project-details > .project-section:nth-child(5), /* notes */
-.project-card.open .project-details > .project-external-links {
-  grid-column: 1 / -1;
-}
+/* An open card stays within its own column and simply grows taller; its detail
+   sections stack vertically (see base .project-details) rather than breaking out
+   across the full panel width. */
 .project-card {
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
@@ -773,6 +783,63 @@ html:not(.dark) .datetime-input { color-scheme: light; }
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
+}
+
+/* ── Drag-to-reorder ── */
+.project-drag-handle {
+  flex-shrink: 0;
+  cursor: grab;
+  color: var(--line-2);
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: -2px;
+  user-select: none;
+  opacity: 0;
+  transition: opacity 0.12s ease, color 0.12s ease;
+}
+.project-card:hover .project-drag-handle,
+.project-card.open .project-drag-handle {
+  opacity: 1;
+}
+.project-drag-handle:hover { color: var(--muted); }
+.project-card:not(.open) { cursor: default; }
+.project-card.dragging {
+  opacity: 0.5;
+}
+.project-card.drag-over {
+  border-color: var(--accent);
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+/* ── Priority flare ── */
+.project-flare {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--line-2);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease, transform 0.12s ease;
+}
+.project-flare:hover { background: color-mix(in oklch, currentColor 14%, transparent); transform: scale(1.12); }
+.project-flare.prio-low  { color: oklch(0.72 0.14 150); }
+.project-flare.prio-med  { color: oklch(0.76 0.16 75); }
+.project-flare.prio-high { color: oklch(0.65 0.22 25); }
+
+/* Card edge accent + soft glow per priority */
+.project-card.prio-low  { border-left: 3px solid oklch(0.72 0.14 150); }
+.project-card.prio-med  { border-left: 3px solid oklch(0.76 0.16 75); }
+.project-card.prio-high {
+  border-left: 3px solid oklch(0.65 0.22 25);
+  box-shadow: 0 0 0 1px color-mix(in oklch, oklch(0.65 0.22 25) 30%, transparent);
 }
 .expand-icon-btn {
   flex-shrink: 0;
@@ -845,20 +912,6 @@ html:not(.dark) .datetime-input { color-scheme: light; }
 .project-link-input:focus { border-color: var(--accent); }
 .project-link-input { font-family: var(--font-mono); font-size: 12px; }
 .project-links { display: flex; flex-direction: column; gap: 6px; }
-.wiki-preview {
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--ink-2);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.wiki-link {
-  background: var(--accent-soft);
-  color: var(--accent);
-  padding: 0 5px;
-  border-radius: 4px;
-  font-weight: 500;
-}
 .project-external-links { flex-direction: row; gap: 8px; }
 .external-link {
   display: inline-flex;
@@ -1148,10 +1201,8 @@ html:not(.dark) .academic-select { color-scheme: light; }
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
-.deadline-row .btn-delete,
-.teaching-row .btn-delete { opacity: 0.5; }
-.deadline-row:hover .btn-delete,
-.teaching-row:hover .btn-delete { opacity: 1; }
+.deadline-row .btn-delete { opacity: 0.5; }
+.deadline-row:hover .btn-delete { opacity: 1; }
 
 /* Service — split into Admin / Non-admin groups; each item is a card whose
    title can wrap to two lines without crowding the chip and due date. */

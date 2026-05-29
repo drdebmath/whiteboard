@@ -122,16 +122,6 @@ function AutoTextarea({ value, onChange, placeholder }) {
 
 /* ─── ProjectPanel ─── */
 
-function renderWikiLinks(text) {
-  if (!text) return null;
-  const parts = text.split(/(\[\[[^\]]+\]\])/g);
-  return parts.map((part, i) => {
-    const m = part.match(/^\[\[(.+)\]\]$/);
-    if (m) return <span key={i} className="wiki-link">[[{m[1]}]]</span>;
-    return part;
-  });
-}
-
 function ProjectTaskList({ items, onChange }) {
   const [text, setText] = useState('');
 
@@ -219,13 +209,33 @@ function CollaboratorsInput({ value = [], onChange }) {
   );
 }
 
-const ProjectCard = memo(function ProjectCard({ proj, isOpen, onToggle, onUpdate, onRemove }) {
+const PRIORITY_LEVELS = ['none', 'low', 'med', 'high'];
+const PRIORITY_LABELS = { none: 'No priority', low: 'Low priority', med: 'Medium priority', high: 'High priority' };
+
+const ProjectCard = memo(function ProjectCard({ proj, isOpen, onToggle, onUpdate, onRemove, isDragging, isDragOver, onDragStart, onDragEnter, onDragEnd, onDrop }) {
   const displayName = proj.name || 'New Project';
   const collabCount = (proj.collaborators || []).length;
+  const priority = PRIORITY_LEVELS.includes(proj.priority) ? proj.priority : 'none';
+
+  const cyclePriority = (e) => {
+    e.stopPropagation();
+    const next = PRIORITY_LEVELS[(PRIORITY_LEVELS.indexOf(priority) + 1) % PRIORITY_LEVELS.length];
+    onUpdate({ priority: next });
+  };
 
   return (
-    <div data-mb-id={proj.id} className={"project-card" + (isOpen ? " open" : "") + (proj.done ? " done" : "")}>
+    <div
+      data-mb-id={proj.id}
+      className={"project-card" + (isOpen ? " open" : "") + (proj.done ? " done" : "") + (priority !== 'none' ? " prio-" + priority : "") + (isDragging ? " dragging" : "") + (isDragOver ? " drag-over" : "")}
+      draggable={!isOpen}
+      onDragStart={onDragStart}
+      onDragEnter={onDragEnter}
+      onDragOver={(e) => e.preventDefault()}
+      onDragEnd={onDragEnd}
+      onDrop={onDrop}
+    >
       <div className="project-title-row">
+        <span className="project-drag-handle" aria-hidden title="Drag to reorder">⋮⋮</span>
         <button
           type="button"
           className="expand-icon-btn"
@@ -234,6 +244,15 @@ const ProjectCard = memo(function ProjectCard({ proj, isOpen, onToggle, onUpdate
           onClick={onToggle}
         >
           {isOpen ? '▼' : '▶'}
+        </button>
+        <button
+          type="button"
+          className={"project-flare prio-" + priority}
+          onClick={cyclePriority}
+          title={PRIORITY_LABELS[priority] + ' (click to change)'}
+          aria-label={PRIORITY_LABELS[priority]}
+        >
+          ✦
         </button>
         <span
           className="project-name-label"
@@ -300,7 +319,6 @@ const ProjectCard = memo(function ProjectCard({ proj, isOpen, onToggle, onUpdate
               onChange={(t) => onUpdate({ notes: t })}
               placeholder="Project notes…"
             />
-            <div className="wiki-preview">{renderWikiLinks(proj.notes)}</div>
           </div>
           <div className="project-section project-links">
             <input
@@ -330,6 +348,19 @@ const ProjectCard = memo(function ProjectCard({ proj, isOpen, onToggle, onUpdate
 
 const ProjectPanel = memo(function ProjectPanel({ items = [], onChange }) {
   const [expanded, setExpanded] = useState({});
+  const [dragId, setDragId] = useState(null);
+  const [overId, setOverId] = useState(null);
+
+  const reorder = (fromId, toId) => {
+    if (fromId === toId) return;
+    const list = Array.isArray(items) ? items.slice() : [];
+    const from = list.findIndex(i => i.id === fromId);
+    const to = list.findIndex(i => i.id === toId);
+    if (from === -1 || to === -1) return;
+    const [moved] = list.splice(from, 1);
+    list.splice(to, 0, moved);
+    onChange(list);
+  };
 
   const toggleExpand = (id) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -346,6 +377,7 @@ const ProjectPanel = memo(function ProjectPanel({ items = [], onChange }) {
       overleaf: '',
       github: '',
       wikiLinks: [],
+      priority: 'none',
       created: Date.now(),
     }]);
   };
@@ -386,6 +418,12 @@ const ProjectPanel = memo(function ProjectPanel({ items = [], onChange }) {
             onToggle={() => toggleExpand(proj.id)}
             onUpdate={(patch) => update(proj.id, patch)}
             onRemove={() => remove(proj.id)}
+            isDragging={dragId === proj.id}
+            isDragOver={overId === proj.id && dragId !== proj.id}
+            onDragStart={(e) => { setDragId(proj.id); e.dataTransfer.effectAllowed = 'move'; }}
+            onDragEnter={() => dragId && setOverId(proj.id)}
+            onDragEnd={() => { setDragId(null); setOverId(null); }}
+            onDrop={(e) => { e.preventDefault(); if (dragId) reorder(dragId, proj.id); setDragId(null); setOverId(null); }}
           />
         ))}
       </div>
@@ -651,6 +689,8 @@ function ChoreFreqMenu({ value, onChange }) {
 
 const ChoresPanel = memo(function ChoresPanel({ items, onChange }) {
   const [text, setText] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState('');
 
   const getFreqMs = (freq) => {
     const f = CHORE_FREQUENCIES.find((c) => c.value === freq);
@@ -710,6 +750,17 @@ const ChoresPanel = memo(function ChoresPanel({ items, onChange }) {
     onChange(items.filter(i => i.id !== id));
   };
 
+  const startEdit = (chore) => {
+    setEditingId(chore.id);
+    setEditText(chore.text);
+  };
+
+  const saveEdit = (id) => {
+    const t = editText.trim();
+    if (t) onChange(items.map(i => i.id === id ? { ...i, text: t } : i));
+    setEditingId(null);
+  };
+
   const sorted = [...items].sort((a, b) => {
     const order = { overdue: 0, due: 1, soon: 2, fresh: 3, 'done-today': 4 };
     const sa = choreStatus(a);
@@ -742,13 +793,28 @@ const ChoresPanel = memo(function ChoresPanel({ items, onChange }) {
           return (
             <li key={chore.id} data-mb-id={chore.id} className={cls}>
               <div className="chore-main-row">
-                <span className="chore-name">{chore.text}</span>
+                {editingId === chore.id ? (
+                  <input
+                    className="todo-input"
+                    value={editText}
+                    autoFocus
+                    onChange={(e) => setEditText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEdit(chore.id);
+                      if (e.key === 'Escape') setEditingId(null);
+                    }}
+                    onBlur={() => saveEdit(chore.id)}
+                  />
+                ) : (
+                  <span className="chore-name">{chore.text}</span>
+                )}
                 <ChoreFreqMenu value={chore.frequency} onChange={(f) => updateFreq(chore.id, f)} />
                 <span className="chore-status-badge">{status}</span>
                 <button className="btn-chore-done" aria-label="Mark done" onClick={() => markDone(chore.id)}>✓</button>
                 {chore.history && chore.history.length > 0 && (
                   <button className="btn-chore-undo" aria-label="Undo last done" onClick={() => undoLast(chore.id)}>↩</button>
                 )}
+                <EditButton onClick={() => startEdit(chore)} />
                 <button className="btn-delete" aria-label="Delete" onClick={() => remove(chore.id)}>×</button>
               </div>
               <div className="chore-meta">
