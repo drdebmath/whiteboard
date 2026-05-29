@@ -16,6 +16,10 @@ python3 -m http.server 8080   # then open http://localhost:8080/
 
 There is no build, lint, or test command. Changes to `.jsx`/`.css` are picked up on browser reload.
 
+## Git workflow
+
+Commit directly to `main` — do **not** create feature branches. When asked to commit, stage and commit on `main`; when asked to push/merge, push `main` to `origin`.
+
 ## Critical constraint: script load order
 
 `index.html` loads the `.jsx` files as plain scripts in a fixed order — **there are no ES module imports/exports**. Files communicate through globals on `window`. Order: `tweaks-panel.jsx` → `store.jsx` → `components.jsx` → `academic.jsx` → `app.jsx` (App must be last). A file can only reference globals defined by files loaded before it. When adding a file, add a `<script>` tag in the correct position.
