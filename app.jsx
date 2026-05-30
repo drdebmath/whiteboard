@@ -37,6 +37,8 @@ const CATEGORIES = [
   { id: "academic", label: "Academic", accent: "oklch(0.62 0.115 250)", soft: "oklch(0.62 0.115 250 / 0.13)" },
   { id: "household", label: "Household", accent: "oklch(0.62 0.095 158)", soft: "oklch(0.62 0.095 158 / 0.13)" },
   { id: "health", label: "Health", accent: "oklch(0.64 0.13 38)", soft: "oklch(0.64 0.13 38 / 0.13)" },
+  { id: "finance", label: "Finance", accent: "oklch(0.62 0.10 195)", soft: "oklch(0.62 0.10 195 / 0.13)" },
+  { id: "travel", label: "Travel", accent: "oklch(0.62 0.15 300)", soft: "oklch(0.62 0.15 300 / 0.13)" },
 ];
 
 // ─── Collect upcoming items ───
@@ -65,6 +67,18 @@ function collectUpcomingPair(state) {
   for (const r of state.health.reminders) {
     if (r.done || !r.when) continue;
     push(new Date(r.when).getTime(), { text: r.text, cat: "health", kind: "Reminder" });
+  }
+  for (const b of state.finance.bills) {
+    if (!b.due) continue;
+    push(b.due, { text: b.name, cat: "finance", kind: "Bill" });
+  }
+  for (const t of state.travel.trips) {
+    if (!t.start) continue;
+    push(new Date(t.start).getTime(), { text: t.destination, cat: "travel", kind: "Trip" });
+  }
+  for (const d of state.travel.documents) {
+    if (!d.expiry) continue;
+    push(d.expiry, { text: `${d.name} expires`, cat: "travel", kind: "Document" });
   }
 
   if (!candidates.length) return { nextUp: null, nearestOverdue: null };
@@ -143,6 +157,9 @@ function computeStats(state, now) {
   state.academic.service.forEach((s) => consider(s.due, false));
   state.household.reminders.forEach((r) => consider(r.when, r.done));
   state.health.reminders.forEach((r) => consider(r.when, r.done));
+  state.finance.bills.forEach((b) => consider(b.due, false));
+  state.travel.trips.forEach((t) => consider(t.start, false));
+  state.travel.documents.forEach((d) => consider(d.expiry, false));
   return { overdue, week };
 }
 
@@ -298,6 +315,7 @@ const TWEAK_DEFAULTS = {
   panelRadius: 14,
   panelOpacity: 82,
   sidebarWidth: 260,
+  currency: "₹",
 };
 
 // ─── Main App ───
@@ -512,6 +530,8 @@ function App() {
         if (e.key === "1") setTab("academic");
         if (e.key === "2") setTab("household");
         if (e.key === "3") setTab("health");
+        if (e.key === "4") setTab("finance");
+        if (e.key === "5") setTab("travel");
       }
     };
     window.addEventListener("keydown", handler);
@@ -557,7 +577,42 @@ function App() {
     for (const r of state.health.reminders) {
       if ((r.text || "").toLowerCase().includes(q)) results.push({ cat: "health", type: "Reminder", text: r.text, id: r.id });
     }
-    for (const cat of ["academic", "household", "health"]) {
+    for (const g of state.finance.grants) {
+      if ((g.title || "").toLowerCase().includes(q)) results.push({ cat: "finance", type: "Grant", text: g.title, id: g.id });
+      for (const h of g.heads || []) {
+        if ((h.name || "").toLowerCase().includes(q)) results.push({ cat: "finance", type: "Budget head", text: `${h.name} · ${g.title}`, id: g.id });
+      }
+    }
+    for (const b of state.finance.bills) {
+      if ((b.name || "").toLowerCase().includes(q)) results.push({ cat: "finance", type: "Bill", text: b.name, id: b.id });
+    }
+    for (const r of state.finance.reimbursements) {
+      const label = `${r.title || ""} ${r.party || ""}`;
+      if (label.toLowerCase().includes(q)) results.push({ cat: "finance", type: "Claim", text: r.title, id: r.id });
+    }
+    for (const l of state.finance.loans) {
+      if ((l.name || "").toLowerCase().includes(q) || (l.lender || "").toLowerCase().includes(q)) results.push({ cat: "finance", type: "Loan", text: l.name, id: l.id });
+    }
+    for (const sv of state.finance.savings) {
+      if ((sv.name || "").toLowerCase().includes(q)) results.push({ cat: "finance", type: "Savings", text: sv.name, id: sv.id });
+    }
+    for (const iv of state.finance.investments) {
+      if ((iv.name || "").toLowerCase().includes(q)) results.push({ cat: "finance", type: "Investment", text: iv.name, id: iv.id });
+    }
+    for (const t of state.travel.trips) {
+      if ((t.destination || "").toLowerCase().includes(q)) results.push({ cat: "travel", type: "Trip", text: t.destination, id: t.id });
+    }
+    for (const p of state.travel.packing) {
+      if ((p.text || "").toLowerCase().includes(q)) results.push({ cat: "travel", type: "Packing", text: p.text, id: p.id });
+    }
+    for (const w of state.travel.wishlist) {
+      const label = `${w.text || ""} ${w.note || ""}`;
+      if (label.toLowerCase().includes(q)) results.push({ cat: "travel", type: "Wishlist", text: w.text, id: w.id });
+    }
+    for (const d of state.travel.documents) {
+      if ((d.name || "").toLowerCase().includes(q)) results.push({ cat: "travel", type: "Document", text: d.name, id: d.id });
+    }
+    for (const cat of ["academic", "household", "health", "finance", "travel"]) {
       for (const g of state[cat].goals || []) {
         const label = `${g.text || ""} ${g.note || ""}`;
         if (label.toLowerCase().includes(q)) results.push({ cat, type: "Goal", text: g.text, id: g.id });
@@ -791,6 +846,90 @@ function App() {
           </div>
         );
 
+      case "finance": {
+        const cur = tweaks.currency || "₹";
+        return (
+          <div className="panels panels-finance">
+            <div className="panels-col">
+              <GrantPanel
+                items={s.grants}
+                currency={cur}
+                onChange={(grants) => safeUpdate((prev) => ({ ...prev, finance: { ...prev.finance, grants } }))}
+              />
+              <BillsPanel
+                items={s.bills}
+                currency={cur}
+                onChange={(bills) => safeUpdate((prev) => ({ ...prev, finance: { ...prev.finance, bills } }))}
+              />
+              <ReimbursementPanel
+                items={s.reimbursements}
+                currency={cur}
+                onChange={(reimbursements) => safeUpdate((prev) => ({ ...prev, finance: { ...prev.finance, reimbursements } }))}
+              />
+              <LoanPanel
+                items={s.loans}
+                currency={cur}
+                onChange={(loans) => safeUpdate((prev) => ({ ...prev, finance: { ...prev.finance, loans } }))}
+              />
+            </div>
+            <div className="panels-col">
+              <GoalsPanel
+                items={s.goals || []}
+                placeholder="e.g. be debt-free, retire by 55…"
+                onChange={(goals) => safeUpdate((prev) => ({ ...prev, finance: { ...prev.finance, goals } }))}
+              />
+              <InvestmentPanel
+                items={s.investments}
+                currency={cur}
+                onChange={(investments) => safeUpdate((prev) => ({ ...prev, finance: { ...prev.finance, investments } }))}
+              />
+              <SavingsPanel
+                items={s.savings}
+                currency={cur}
+                onChange={(savings) => safeUpdate((prev) => ({ ...prev, finance: { ...prev.finance, savings } }))}
+              />
+            </div>
+          </div>
+        );
+      }
+
+      case "travel":
+        return (
+          <div className="panels-travel-wrap">
+            <TripAlerts
+              items={s.trips}
+              onChange={(trips) => safeUpdate((prev) => ({ ...prev, travel: { ...prev.travel, trips } }))}
+            />
+            <div className="panels panels-travel">
+              <div className="panels-col">
+                <TripsPanel
+                  items={s.trips}
+                  onChange={(trips) => safeUpdate((prev) => ({ ...prev, travel: { ...prev.travel, trips } }))}
+                />
+                <DocumentsPanel
+                  items={s.documents}
+                  onChange={(documents) => safeUpdate((prev) => ({ ...prev, travel: { ...prev.travel, documents } }))}
+                />
+              </div>
+              <div className="panels-col">
+                <GoalsPanel
+                  items={s.goals || []}
+                  placeholder="e.g. visit all 7 continents…"
+                  onChange={(goals) => safeUpdate((prev) => ({ ...prev, travel: { ...prev.travel, goals } }))}
+                />
+                <PackingPanel
+                  items={s.packing}
+                  onChange={(packing) => safeUpdate((prev) => ({ ...prev, travel: { ...prev.travel, packing } }))}
+                />
+                <WishlistPanel
+                  items={s.wishlist}
+                  onChange={(wishlist) => safeUpdate((prev) => ({ ...prev, travel: { ...prev.travel, wishlist } }))}
+                />
+              </div>
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -980,7 +1119,7 @@ function App() {
 
       {/* Keyboard hints */}
       <div className="keyboard-hints">
-        <span>1/2/3 — switch tabs</span>
+        <span>1–5 — switch tabs</span>
         <span>⌘F — search</span>
         <span>⌘Z — undo</span>
         <span>⌘⇧T — tweaks</span>
@@ -1040,6 +1179,19 @@ function App() {
             step={1}
             unit="°"
             onChange={(v) => setTweak("hue", v)}
+          />
+        </TweakSection>
+        <TweakSection label="Regional">
+          <TweakRadio
+            label="Currency"
+            value={tweaks.currency}
+            options={[
+              { value: "₹", label: "₹" },
+              { value: "$", label: "$" },
+              { value: "€", label: "€" },
+              { value: "£", label: "£" },
+            ]}
+            onChange={(v) => setTweak("currency", v)}
           />
         </TweakSection>
         <TweakSection label="Layout">

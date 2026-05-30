@@ -25,9 +25,17 @@
   --academic: oklch(0.6 0.115 250);
   --household: oklch(0.61 0.095 158);
   --health: oklch(0.63 0.13 38);
+  --finance: oklch(0.6 0.10 195);
+  --travel: oklch(0.6 0.15 300);
   --academic-soft: oklch(0.6 0.115 250 / 0.13);
   --household-soft: oklch(0.61 0.095 158 / 0.13);
   --health-soft: oklch(0.63 0.13 38 / 0.13);
+  --finance-soft: oklch(0.6 0.10 195 / 0.13);
+  --travel-soft: oklch(0.6 0.15 300 / 0.13);
+
+  /* Money figures */
+  --gain: oklch(0.6 0.14 150);
+  --loss: oklch(0.58 0.18 25);
 
   /* Active accent — overridden at runtime from the Hue tweak (app.jsx) */
   --accent: hsl(268, 48%, 56%);
@@ -72,9 +80,15 @@ html.dark {
   --academic: oklch(0.7 0.12 250);
   --household: oklch(0.72 0.1 158);
   --health: oklch(0.72 0.13 40);
+  --finance: oklch(0.72 0.10 195);
+  --travel: oklch(0.7 0.15 300);
   --academic-soft: oklch(0.7 0.12 250 / 0.16);
   --household-soft: oklch(0.72 0.1 158 / 0.16);
   --health-soft: oklch(0.72 0.13 40 / 0.16);
+  --finance-soft: oklch(0.72 0.10 195 / 0.16);
+  --travel-soft: oklch(0.7 0.15 300 / 0.16);
+  --gain: oklch(0.74 0.15 150);
+  --loss: oklch(0.72 0.18 25);
   --danger: oklch(0.72 0.17 25);
   --danger-soft: oklch(0.42 0.12 25 / 0.25);
   --panel-shadow:
@@ -678,10 +692,12 @@ html:not(.dark) .datetime-input { color-scheme: light; }
 .deadline-row .btn-edit,
 .teaching-course-head .btn-edit,
 .chore-item .btn-edit,
+.reading-item .btn-edit,
 .service-card .btn-edit { opacity: 0.5; }
 .deadline-row:hover .btn-edit,
 .teaching-course-head:hover .btn-edit,
 .chore-item:hover .btn-edit,
+.reading-item:hover .btn-edit,
 .service-card:hover .btn-edit { opacity: 1; }
 
 /* ── Reminders ────────────────────────────────────────────────────────── */
@@ -1120,13 +1136,21 @@ html.dark .chore-due .chore-status-badge { color: oklch(0.78 0.12 78); }
 }
 .academic-input,
 .academic-select {
-  padding: 8px 10px;
-  background: var(--surface-2);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 8px 30px 8px 10px;
+  background-color: var(--surface-2);
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px;
   border: 1px solid var(--line);
   border-radius: 6px;
   font-size: 13px;
   color: var(--ink);
   outline: none;
+  cursor: pointer;
   transition: border-color 0.15s ease;
   color-scheme: dark;
 }
@@ -1735,4 +1759,359 @@ html:not(.dark) .academic-select { color-scheme: light; }
   .tab-search { flex-basis: 100%; order: 3; margin: 8px 0 0; }
   .tab-nav { flex-wrap: wrap; }
   .keyboard-hints { display: none; }
+}
+
+/* ══ Finance & Travel tabs (finance.jsx / travel.jsx) ═════════════════════ */
+
+/* Both tabs use the two-column flex layout, like Household / Health. */
+.panels-finance,
+.panels-travel {
+  column-count: unset;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gap);
+}
+.panels-travel-wrap { display: flex; flex-direction: column; gap: var(--gap); }
+
+@media (max-width: 980px) {
+  .panels-finance, .panels-travel { flex-direction: column; }
+}
+
+/* Shared money styling */
+.money { font-variant-numeric: tabular-nums; }
+.money-pos { color: var(--gain); }
+.money-neg { color: var(--loss); }
+.money-input { font-variant-numeric: tabular-nums; text-align: right; }
+.money-input::-webkit-outer-spin-button,
+.money-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.money-input { -moz-appearance: textfield; }
+.todo-input.money-input { flex: 0 0 96px; min-width: 0; text-align: left; }
+
+/* A muted summary line under a panel's add row (totals, portfolio, etc.). */
+.fin-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  padding: 2px 2px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.fin-summary.invest-summary { flex-wrap: wrap; }
+.fin-summary .money { color: var(--ink-2); font-weight: 600; }
+
+/* ── Grants ── */
+.grant-list { display: flex; flex-direction: column; gap: 9px; }
+.grant-title { flex: 1; min-width: 0; }
+.grant-remaining { flex-shrink: 0; font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.grant-due { flex-shrink: 0; font-size: 11.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.grant-card.overdue .grant-due { color: var(--danger); }
+.grant-card.soon .grant-due { color: var(--accent); }
+.grant-details { display: flex; flex-direction: column; gap: 12px; }
+.grant-fields { display: flex; flex-wrap: wrap; gap: 10px; }
+.grant-fields label { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; color: var(--muted); }
+.grant-fields label:first-child { flex: 1 1 100%; }
+.grant-input {
+  width: 110px;
+  padding: 5px 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 12.5px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.grant-input:focus { border-color: var(--accent); }
+.grant-summary { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.grant-heads-label { font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
+.grant-head-list { list-style: none; margin: 6px 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.grant-head-item { display: flex; flex-direction: column; gap: 6px; padding: 7px 8px; border-radius: var(--radius-sm); transition: background 0.12s ease; }
+.grant-head-item:hover { background: var(--surface-2); }
+.grant-head-top { display: flex; align-items: center; gap: 9px; }
+.grant-head-figures { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); }
+.grant-head-field { display: inline-flex; align-items: center; gap: 4px; }
+.grant-head-sep { color: var(--muted); }
+.grant-head-item.over .grant-head-name { color: var(--loss); }
+.grant-head-name { flex: 1; min-width: 0; font-size: 13.5px; color: var(--ink); overflow-wrap: break-word; }
+.grant-head-amount {
+  width: 100px;
+  padding: 4px 7px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 12.5px;
+  outline: none;
+  text-align: right;
+  transition: border-color 0.15s ease;
+}
+.grant-head-amount:focus { border-color: var(--accent); }
+.grant-head-item .btn-delete { opacity: 0; }
+.grant-head-item:hover .btn-delete { opacity: 1; }
+
+/* ── Budgets & Savings ── */
+.budget-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.budget-item {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.budget-top { display: flex; align-items: center; gap: 8px; }
+.budget-cat { flex: 1; min-width: 0; font-size: 13.5px; color: var(--ink); overflow-wrap: break-word; }
+.budget-figures {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.budget-spent,
+.invest-input {
+  width: 88px;
+  padding: 5px 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 12.5px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.budget-spent:focus,
+.invest-input:focus { border-color: var(--accent); }
+.budget-sep { white-space: nowrap; }
+.budget-pct { font-weight: 600; color: var(--ink-2); min-width: 34px; text-align: right; }
+.budget-item .btn-delete { opacity: 0.5; }
+.budget-item:hover .btn-delete { opacity: 1; }
+.budget-bar {
+  width: 100%;
+  height: 6px;
+  background: color-mix(in oklch, var(--surface) 60%, var(--line));
+  border-radius: 999px;
+  overflow: hidden;
+}
+.budget-bar-fill { height: 100%; background: var(--finance); border-radius: 999px; transition: width 0.3s ease; }
+.budget-bar-fill.over { background: var(--loss); }
+.budget-bar-fill.savings { background: var(--accent); }
+.budget-bar-fill.savings.done { background: var(--gain); }
+.budget-bar-fill.done { background: var(--gain); }
+.budget-item.over .budget-cat { color: var(--loss); }
+.savings-item.done .budget-cat { color: var(--gain); }
+
+/* ── Loans ── */
+.loan-name { flex: 1; min-width: 0; font-size: 14px; color: var(--ink); overflow-wrap: break-word; }
+.loan-lender { color: var(--muted); font-size: 12px; }
+.loan-item.done .loan-name { color: var(--gain); }
+.loan-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.loan-paid { margin-left: auto; }
+.loan-due.overdue { color: var(--danger); }
+.loan-due.soon { color: var(--accent); }
+
+/* ── Bills ── */
+.bill-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 8px 8px 6px;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s ease;
+}
+.bill-item:hover { background: var(--surface-2); }
+.bill-name { flex: 1; min-width: 0; font-size: 14px; color: var(--ink); overflow-wrap: break-word; }
+.bill-amount { flex-shrink: 0; font-size: 13px; color: var(--ink-2); }
+.bill-due { flex-shrink: 0; font-size: 11.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bill-item.overdue { background: var(--danger-soft); }
+.bill-item.overdue .bill-due { color: var(--danger); }
+.bill-item.soon .bill-due { color: var(--accent); }
+.bill-item .btn-delete { opacity: 0; }
+.bill-item:hover .btn-delete { opacity: 1; }
+
+/* ── Reimbursements ── */
+.reimb-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 8px 8px 6px;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s ease;
+}
+.reimb-item:hover { background: var(--surface-2); }
+.reimb-status-btn {
+  --chip: var(--muted);
+  flex-shrink: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  background: color-mix(in oklch, var(--chip) 15%, transparent);
+  color: color-mix(in oklch, var(--chip) 72%, var(--ink));
+  border: 1px solid color-mix(in oklch, var(--chip) 30%, transparent);
+  transition: filter 0.15s ease;
+}
+.reimb-status-btn:hover { filter: brightness(1.08); }
+.reimb-title { flex: 1; min-width: 0; font-size: 14px; color: var(--ink); overflow-wrap: break-word; }
+.reimb-party { color: var(--muted); font-size: 12px; }
+.reimb-due { flex-shrink: 0; font-size: 11.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.reimb-item.overdue .reimb-due { color: var(--danger); }
+.reimb-item.soon .reimb-due { color: var(--accent); }
+.reimb-amount { flex-shrink: 0; font-size: 13px; color: var(--ink-2); }
+.reimb-item.status-received { opacity: 0.6; }
+.reimb-item.status-received .reimb-title { text-decoration: line-through; color: var(--muted); }
+.reimb-item .btn-delete { opacity: 0; }
+.reimb-item:hover .btn-delete { opacity: 1; }
+
+/* ── Investments ── */
+.invest-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.invest-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.invest-row { display: flex; align-items: center; gap: 8px; }
+.invest-name { flex: 1; min-width: 0; font-size: 13.5px; color: var(--ink); overflow-wrap: break-word; }
+.invest-gain { flex-shrink: 0; font-size: 12px; font-weight: 600; }
+.invest-item .btn-delete { opacity: 0.5; }
+.invest-item:hover .btn-delete { opacity: 1; }
+.invest-figures { display: flex; flex-wrap: wrap; gap: 12px; }
+.invest-figures label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+/* ── Trip action cards (TripAlerts) ── */
+.trip-alerts { display: flex; flex-wrap: wrap; gap: 12px; }
+.trip-alert {
+  --trip-tone: var(--accent);
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px 14px;
+  background: color-mix(in oklch, var(--trip-tone) 8%, var(--panel-bg));
+  border: 1px solid color-mix(in oklch, var(--trip-tone) 28%, transparent);
+  border-left: 3px solid var(--trip-tone);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--panel-shadow);
+}
+.trip-alert-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.trip-alert-dest { font-size: 15px; font-weight: 600; color: var(--ink); overflow-wrap: break-word; }
+.trip-alert-countdown {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--trip-tone);
+  font-variant-numeric: tabular-nums;
+}
+.trip-alert-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.trip-action-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.trip-action-chip:hover { border-color: var(--trip-tone); color: var(--trip-tone); }
+.trip-action-chip.todo { cursor: default; color: var(--muted); }
+.trip-action-chip.todo:hover { border-color: var(--line); color: var(--muted); }
+.trip-alert-allset { font-size: 12.5px; font-weight: 600; color: var(--gain); }
+
+/* ── Trips ── */
+.trips-list { display: flex; flex-direction: column; gap: 9px; }
+.trip-card .project-title-row { display: flex; align-items: center; gap: 8px; padding: 9px 11px; }
+.trip-dest { flex: 1; min-width: 0; }
+.trip-range { flex-shrink: 0; font-size: 11.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.trip-booked-count {
+  flex-shrink: 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 7px;
+  font-variant-numeric: tabular-nums;
+}
+.trip-date-row { display: flex; align-items: center; gap: 8px; }
+.trip-date-sep { color: var(--muted); }
+.trip-bookings { display: flex; flex-wrap: wrap; gap: 7px; }
+.trip-booking-toggle {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  transition: all 0.15s ease;
+}
+.trip-booking-toggle:hover { border-color: var(--travel); color: var(--travel); }
+.trip-booking-toggle.booked {
+  background: color-mix(in oklch, var(--gain) 16%, transparent);
+  border-color: color-mix(in oklch, var(--gain) 40%, transparent);
+  color: var(--gain);
+}
+
+/* ── Wishlist ── */
+.wishlist-note { color: var(--muted); font-size: 13px; }
+
+/* ── Documents ── */
+.doc-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 8px 8px 6px;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s ease;
+}
+.doc-item:hover { background: var(--surface-2); }
+.doc-name { flex: 1; min-width: 0; font-size: 14px; color: var(--ink); overflow-wrap: break-word; }
+.doc-number { flex-shrink: 0; font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); }
+.doc-expiry { flex-shrink: 0; font-size: 11.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.doc-item.overdue { background: var(--danger-soft); }
+.doc-item.overdue .doc-expiry { color: var(--danger); }
+.doc-item.soon .doc-expiry { color: var(--accent); }
+.doc-item .btn-delete { opacity: 0; }
+.doc-item:hover .btn-delete { opacity: 1; }
+
+/* Overleaf quick-link icon on collapsed project cards */
+.project-overleaf-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  color: oklch(0.62 0.17 145);
+  text-decoration: none;
+  opacity: 0.85;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+.project-overleaf-icon:hover {
+  opacity: 1;
+  background: oklch(0.62 0.17 145 / 0.14);
 }

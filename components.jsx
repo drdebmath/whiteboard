@@ -263,10 +263,22 @@ const ProjectCard = memo(function ProjectCard({ proj, isOpen, onToggle, onUpdate
         >
           {displayName}
         </span>
-        {!isOpen && collabCount > 0 && (
-          <span className="project-collab-count" title={`${collabCount} collaborator${collabCount === 1 ? '' : 's'}`}>
-            {collabCount}
-          </span>
+        {!isOpen && safeHref(proj.overleaf) && (
+          <a
+            className="project-overleaf-icon"
+            href={safeHref(proj.overleaf)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            title="Open Overleaf project"
+            aria-label="Open Overleaf project"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+          </a>
         )}
         <button
           type="button"
@@ -436,6 +448,9 @@ const ProjectPanel = memo(function ProjectPanel({ items = [], onChange }) {
 const ReadingPanel = memo(function ReadingPanel({ items = [], onChange }) {
   const [text, setText] = useState('');
   const [url, setUrl] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState('');
+  const [editUrl, setEditUrl] = useState('');
   const list = Array.isArray(items) ? items : [];
 
   const add = () => {
@@ -452,6 +467,18 @@ const ReadingPanel = memo(function ReadingPanel({ items = [], onChange }) {
 
   const remove = (id) => {
     onChange(list.filter(i => i.id !== id));
+  };
+
+  const startEdit = (item) => {
+    setEditingId(item.id);
+    setEditText(item.text || '');
+    setEditUrl(item.url || '');
+  };
+
+  const saveEdit = (id) => {
+    const t = editText.trim();
+    if (t) onChange(list.map(i => i.id === id ? { ...i, text: t, url: editUrl.trim() } : i));
+    setEditingId(null);
   };
 
   return (
@@ -477,11 +504,45 @@ const ReadingPanel = memo(function ReadingPanel({ items = [], onChange }) {
         {list.map((item) => (
           <li key={item.id} data-mb-id={item.id} className={'todo-item reading-item' + (item.done ? ' done' : '')}>
             <input type="checkbox" checked={item.done} onChange={() => toggle(item.id)} />
-            <span className="todo-text">{item.text || '(Untitled)'}</span>
-            {safeHref(item.url) && (
-              <a className="external-badge" href={safeHref(item.url)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                ↗
-              </a>
+            {editingId === item.id ? (
+              <>
+                <input
+                  className="todo-input"
+                  value={editText}
+                  autoFocus
+                  onChange={(e) => setEditText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveEdit(item.id);
+                    if (e.key === 'Escape') setEditingId(null);
+                  }}
+                  placeholder="Title…"
+                />
+                <input
+                  className="todo-input"
+                  value={editUrl}
+                  onChange={(e) => setEditUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveEdit(item.id);
+                    if (e.key === 'Escape') setEditingId(null);
+                  }}
+                  placeholder="URL (optional)…"
+                />
+                <button className="btn-chore-done" aria-label="Save" onClick={() => saveEdit(item.id)}>✓</button>
+              </>
+            ) : (
+              <>
+                <span className="todo-text">{item.text || '(Untitled)'}</span>
+                {safeHref(item.url) && (
+                  <a className="external-badge" href={safeHref(item.url)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} title="Open link" aria-label="Open link">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                  </a>
+                )}
+                <EditButton onClick={() => startEdit(item)} />
+              </>
             )}
             <button className="btn-delete" aria-label="Delete" onClick={() => remove(item.id)}>×</button>
           </li>
@@ -905,6 +966,7 @@ Object.assign(window, {
   HabitPanel,
   ChoresPanel,
   GoalsPanel,
+  AutoTextarea,
   formatWhen,
   relTime,
 });

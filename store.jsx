@@ -23,6 +23,8 @@ const EMPTY_STATE = {
   academic: { projects: [], deadlines: [], teaching: [], service: [], readings: [], goals: [] },
   household: { chores: [], reminders: [], shopping: [], goals: [] },
   health: { habits: [], reminders: [], goals: [] },
+  finance: { grants: [], bills: [], reimbursements: [], loans: [], savings: [], investments: [], goals: [] },
+  travel: { trips: [], packing: [], wishlist: [], documents: [], goals: [] },
   meta: { updatedAt: 0 },
 };
 
@@ -60,6 +62,21 @@ function parseDue(value) {
   if (typeof value === "number" && !Number.isNaN(value)) return value;
   const ts = new Date(value).getTime();
   return Number.isNaN(ts) ? null : ts;
+}
+
+// Coerce loosely-typed money/number values (strings from inputs, undefined) to
+// a finite number; anything unparseable becomes 0.
+function num(v) {
+  const n = typeof v === "number" ? v : parseFloat(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+// Format a number as currency. Symbol defaults to ₹; grouping uses Indian
+// digit grouping, which reads fine for other symbols too.
+function formatMoney(amount, symbol = "₹") {
+  const n = num(amount);
+  const abs = Math.abs(n).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+  return `${n < 0 ? "-" : ""}${symbol}${abs}`;
 }
 
 function freqFromLegacy(freq) {
@@ -198,6 +215,10 @@ function normalizeState(parsed) {
       created: g.created || g.createdAt || Date.now(),
     }));
 
+  const fin = parsed.finance || {};
+  const trv = parsed.travel || {};
+  const arr = (v) => (Array.isArray(v) ? v : []);
+
   return {
     academic: {
       ...EMPTY_STATE.academic,
@@ -255,6 +276,110 @@ function normalizeState(parsed) {
         created: r.created || r.createdAt || Date.now(),
       })),
       goals: normalizeGoals(h.goals),
+    },
+    finance: {
+      ...EMPTY_STATE.finance,
+      grants: arr(fin.grants).map((g) => ({
+        id: g.id || uid(),
+        title: String(g.title || g.name || g.category || "").trim(),
+        total: num(g.total),
+        advance: num(g.advance),
+        expiry: parseDue(g.expiry ?? g.when),
+        heads: arr(g.heads).map((h) => ({
+          id: h.id || uid(),
+          name: String(h.name || "").trim(),
+          amount: num(h.amount),
+          spent: num(h.spent),
+        })),
+        created: g.created || g.createdAt || Date.now(),
+      })),
+      bills: arr(fin.bills).map((b) => ({
+        id: b.id || uid(),
+        name: String(b.name || b.text || "").trim(),
+        amount: num(b.amount),
+        cadence: b.cadence || "monthly",
+        due: parseDue(b.due ?? b.when),
+        created: b.created || b.createdAt || Date.now(),
+      })),
+      reimbursements: arr(fin.reimbursements).map((r) => ({
+        id: r.id || uid(),
+        title: String(r.title || r.text || "").trim(),
+        amount: num(r.amount),
+        party: String(r.party || "").trim(),
+        status: ["pending", "claimed", "received"].includes(r.status) ? r.status : "pending",
+        due: parseDue(r.due ?? r.when),
+        created: r.created || r.createdAt || Date.now(),
+      })),
+      loans: arr(fin.loans).map((l) => ({
+        id: l.id || uid(),
+        name: String(l.name || l.text || "").trim(),
+        lender: String(l.lender || "").trim(),
+        principal: num(l.principal),
+        outstanding: num(l.outstanding),
+        rate: num(l.rate),
+        emi: num(l.emi),
+        due: parseDue(l.due ?? l.when),
+        created: l.created || l.createdAt || Date.now(),
+      })),
+      savings: arr(fin.savings).map((s) => ({
+        id: s.id || uid(),
+        name: String(s.name || s.text || "").trim(),
+        target: num(s.target),
+        current: num(s.current),
+        created: s.created || s.createdAt || Date.now(),
+      })),
+      investments: arr(fin.investments).map((i) => ({
+        id: i.id || uid(),
+        name: String(i.name || i.text || "").trim(),
+        type: i.type || "Other",
+        invested: num(i.invested),
+        value: num(i.value),
+        created: i.created || i.createdAt || Date.now(),
+      })),
+      goals: normalizeGoals(fin.goals),
+    },
+    travel: {
+      ...EMPTY_STATE.travel,
+      trips: arr(trv.trips).map((t) => ({
+        id: t.id || uid(),
+        destination: String(t.destination || t.text || "").trim(),
+        start: t.start || "",
+        end: t.end || "",
+        purpose: t.purpose || "Personal",
+        flightBooked: !!t.flightBooked,
+        stayBooked: !!t.stayBooked,
+        transportBooked: !!t.transportBooked,
+        tasks: arr(t.tasks).map((task) => ({
+          id: task.id || uid(),
+          text: String(task.text || "").trim(),
+          done: !!task.done,
+        })),
+        notes: String(t.notes || "").trim(),
+        link: String(t.link || "").trim(),
+        created: t.created || t.createdAt || Date.now(),
+      })),
+      packing: arr(trv.packing).map((p) => ({
+        id: p.id || uid(),
+        text: String(p.text || "").trim(),
+        packed: !!p.packed,
+        created: p.created || p.createdAt || Date.now(),
+      })),
+      wishlist: arr(trv.wishlist).map((w) => ({
+        id: w.id || uid(),
+        text: String(w.text || w.title || "").trim(),
+        note: String(w.note || "").trim(),
+        visited: !!w.visited,
+        created: w.created || w.createdAt || Date.now(),
+      })),
+      documents: arr(trv.documents).map((d) => ({
+        id: d.id || uid(),
+        name: String(d.name || d.text || "").trim(),
+        kind: d.kind || "Other",
+        number: String(d.number || "").trim(),
+        expiry: parseDue(d.expiry ?? d.due),
+        created: d.created || d.createdAt || Date.now(),
+      })),
+      goals: normalizeGoals(trv.goals),
     },
     meta: { updatedAt: Number(parsed.meta?.updatedAt) || 0 },
   };
@@ -424,6 +549,8 @@ window.MyBoardStore = {
   pushRemote,
   debounce,
   uid,
+  num,
+  formatMoney,
   MS,
   dateKey,
   todayKey,
