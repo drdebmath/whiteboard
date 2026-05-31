@@ -269,47 +269,84 @@ const TripsPanel = memo(function TripsPanel({ items = [], onChange }) {
   );
 });
 
-/* ─── PackingPanel (mirrors ShoppingPanel) ─── */
+/* ─── PackingPanel — a checklist scoped to an upcoming trip ─── */
 
-const PackingPanel = memo(function PackingPanel({ items = [], onChange }) {
+const PackingPanel = memo(function PackingPanel({ items = [], trips = [], onChange }) {
+  const [tripId, setTripId] = useState("");
   const [text, setText] = useState("");
+
+  // Only current/future trips qualify — the board never dwells on the past.
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const activeTrips = trips
+    .filter((t) => {
+      const ref = t.end || t.start;
+      if (!ref) return true;
+      const ts = new Date(ref).getTime();
+      return Number.isNaN(ts) || ts >= todayStart.getTime();
+    })
+    .sort((a, b) => (a.start ? new Date(a.start).getTime() : Infinity) - (b.start ? new Date(b.start).getTime() : Infinity));
+
+  const selectedId = activeTrips.some((t) => t.id === tripId) ? tripId : (activeTrips[0]?.id || "");
+  const tripItems = items.filter((i) => i.tripId === selectedId);
 
   const add = () => {
     const t = text.trim();
-    if (!t) return;
-    onChange([...items, { id: uid(), text: t, packed: false, created: Date.now() }]);
+    if (!t || !selectedId) return;
+    onChange([...items, { id: uid(), tripId: selectedId, text: t, packed: false, created: Date.now() }]);
     setText("");
   };
   const toggle = (id) => onChange(items.map((i) => (i.id === id ? { ...i, packed: !i.packed } : i)));
   const remove = (id) => onChange(items.filter((i) => i.id !== id));
-  const clearPacked = () => onChange(items.filter((i) => !i.packed));
+  const clearPacked = () => onChange(items.filter((i) => !(i.tripId === selectedId && i.packed)));
 
   return (
     <div className="panel">
       <div className="panel-header">
         Packing List
-        {items.some((i) => i.packed) && <button className="btn-clear-bought" onClick={clearPacked}>Clear packed</button>}
+        {tripItems.some((i) => i.packed) && <button className="btn-clear-bought" onClick={clearPacked}>Clear packed</button>}
       </div>
-      <div className="todo-input-row">
-        <input
-          className="todo-input"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && add()}
-          placeholder="Add item…"
-        />
-        <button className="btn-add" aria-label="Add" onClick={add}>+</button>
-      </div>
-      {!items.length && <div className="panel-empty">Nothing to pack yet</div>}
-      <ul className="todo-list">
-        {items.map((item) => (
-          <li key={item.id} data-mb-id={item.id} className={"todo-item" + (item.packed ? " done" : "")}>
-            <input type="checkbox" checked={item.packed} onChange={() => toggle(item.id)} />
-            <span className="todo-text">{item.text}</span>
-            <button className="btn-delete" aria-label="Delete" onClick={() => remove(item.id)}>×</button>
-          </li>
-        ))}
-      </ul>
+      {!activeTrips.length ? (
+        <div className="panel-empty">Add an upcoming trip to start a packing list</div>
+      ) : (
+        <>
+          <select
+            className="academic-select packing-trip-select"
+            value={selectedId}
+            onChange={(e) => setTripId(e.target.value)}
+            aria-label="Trip to pack for"
+          >
+            {activeTrips.map((t) => {
+              const range = dateRangeText(t.start, t.end);
+              return (
+                <option key={t.id} value={t.id}>
+                  {(t.destination || "Untitled trip") + (range ? ` · ${range}` : "")}
+                </option>
+              );
+            })}
+          </select>
+          <div className="todo-input-row">
+            <input
+              className="todo-input"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && add()}
+              placeholder="Add item…"
+            />
+            <button className="btn-add" aria-label="Add" onClick={add}>+</button>
+          </div>
+          {!tripItems.length && <div className="panel-empty">Nothing to pack yet</div>}
+          <ul className="todo-list">
+            {tripItems.map((item) => (
+              <li key={item.id} data-mb-id={item.id} className={"todo-item" + (item.packed ? " done" : "")}>
+                <input type="checkbox" checked={item.packed} onChange={() => toggle(item.id)} />
+                <span className="todo-text">{item.text}</span>
+                <button className="btn-delete" aria-label="Delete" onClick={() => remove(item.id)}>×</button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 });
@@ -388,22 +425,22 @@ function expiryInfo(expiry, now) {
 }
 
 const DocumentsPanel = memo(function DocumentsPanel({ items = [], onChange }) {
-  const [name, setName] = useState("");
   const [kind, setKind] = useState(DOC_KINDS[0]);
   const [number, setNumber] = useState("");
+  const [label, setLabel] = useState("");
   const [expiry, setExpiry] = useState("");
 
   const add = (e) => {
     e.preventDefault();
-    const n = name.trim();
-    if (!n) return;
+    const num = number.trim();
+    if (!num) return;
     onChange([
       ...items,
-      { id: uid(), name: n, kind, number: number.trim(), expiry: expiry ? new Date(expiry).getTime() : null, created: Date.now() },
+      { id: uid(), kind, label: label.trim(), number: num, expiry: expiry ? new Date(expiry).getTime() : null, created: Date.now() },
     ]);
-    setName("");
     setKind(DOC_KINDS[0]);
     setNumber("");
+    setLabel("");
     setExpiry("");
   };
   const remove = (id) => onChange(items.filter((i) => i.id !== id));
@@ -415,11 +452,11 @@ const DocumentsPanel = memo(function DocumentsPanel({ items = [], onChange }) {
     <div className="panel">
       <div className="panel-header">Documents</div>
       <form className="academic-form" onSubmit={add}>
-        <input className="academic-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (e.g. Passport)" />
         <select className="academic-select" value={kind} onChange={(e) => setKind(e.target.value)}>
           {DOC_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
         </select>
-        <input className="academic-input sm" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Number" />
+        <input className="academic-input" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Number" />
+        <input className="academic-input sm" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (optional, e.g. Schengen)" />
         <DatePicker className="academic-input sm" small value={expiry} onChange={setExpiry} />
         <button type="submit" className="academic-submit">Add</button>
       </form>
@@ -433,8 +470,8 @@ const DocumentsPanel = memo(function DocumentsPanel({ items = [], onChange }) {
           return (
             <li key={d.id} data-mb-id={d.id} className={cls}>
               <Chip label={d.kind} color={DOC_KIND_COLOR[d.kind]} />
-              <span className="doc-name">{d.name}</span>
-              {d.number && <span className="doc-number">{d.number}</span>}
+              {d.label && <span className="doc-name">{d.label}</span>}
+              <span className="doc-number">{d.number}</span>
               <span className="doc-expiry">{exp.text}</span>
               <button className="btn-delete" aria-label="Delete" onClick={() => remove(d.id)}>×</button>
             </li>

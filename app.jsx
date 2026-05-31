@@ -67,7 +67,7 @@ const DATE_SOURCES = [
   { cat: "finance", kind: "Loan", list: (s) => s.finance.loans, date: (i) => i.due, text: (i) => `${i.name} payment` },
   { cat: "finance", kind: "Grant", list: (s) => s.finance.grants, date: (i) => i.expiry, text: (i) => `${i.title} ends` },
   { cat: "travel", kind: "Trip", list: (s) => s.travel.trips, date: (i) => i.start, text: (i) => i.destination },
-  { cat: "travel", kind: "Document", list: (s) => s.travel.documents, date: (i) => i.expiry, text: (i) => `${i.name} expires` },
+  { cat: "travel", kind: "Document", list: (s) => s.travel.documents, date: (i) => i.expiry, text: (i) => `${i.label ? `${i.kind} (${i.label})` : i.kind} expires` },
 ];
 
 // Walk every dated item across the board, normalizing its date (epoch ms, ISO
@@ -769,7 +769,8 @@ function App() {
       if (label.toLowerCase().includes(q)) results.push({ cat: "travel", type: "Wishlist", text: w.text, id: w.id });
     }
     for (const d of state.travel.documents) {
-      if ((d.name || "").toLowerCase().includes(q)) results.push({ cat: "travel", type: "Document", text: d.name, id: d.id });
+      const hay = `${d.kind || ""} ${d.label || ""} ${d.number || ""}`.toLowerCase();
+      if (hay.includes(q)) results.push({ cat: "travel", type: "Document", text: d.label ? `${d.kind} · ${d.label}` : d.kind, id: d.id });
     }
     for (const cat of ["academic", "research", "household", "health", "finance", "travel"]) {
       for (const g of state[cat].goals || []) {
@@ -1176,6 +1177,7 @@ function App() {
                 />
                 <PackingPanel
                   items={s.packing}
+                  trips={s.trips}
                   onChange={(packing) => safeUpdate((prev) => ({ ...prev, travel: { ...prev.travel, packing } }))}
                 />
                 <WishlistPanel

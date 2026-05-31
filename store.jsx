@@ -386,6 +386,7 @@ function normalizeState(parsed) {
       })),
       packing: arr(trv.packing).map((p) => ({
         id: p.id || uid(),
+        tripId: p.tripId || "",
         text: String(p.text || "").trim(),
         packed: !!p.packed,
         created: p.created || Date.now(),
@@ -399,8 +400,9 @@ function normalizeState(parsed) {
       })),
       documents: arr(trv.documents).map((d) => ({
         id: d.id || uid(),
-        name: String(d.name || "").trim(),
         kind: d.kind || "Other",
+        // optional qualifier; older boards stored this as `name`
+        label: String(d.label || d.name || "").trim(),
         number: String(d.number || "").trim(),
         expiry: parseDue(d.expiry),
         created: d.created || Date.now(),

@@ -594,6 +594,11 @@ html.dark .app-main {
   gap: 8px;
   flex-wrap: wrap;
 }
+
+.packing-trip-select {
+  width: 100%;
+  margin-bottom: 8px;
+}
 .todo-input {
   flex: 1;
   min-width: 120px;

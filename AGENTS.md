@@ -6,6 +6,10 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 Whiteboard is a **local-first, no-build** personal dashboard (academic tasks, household lists, health habits, reminders) with optional private GitHub Gist sync. There is no bundler, package manager, or test suite — React, ReactDOM, and Babel Standalone are loaded from CDN in `index.html`, and `.jsx` files are transpiled in the browser via `<script type="text/babel">`.
 
+## Philosophy
+
+Whiteboard tracks the **current and the future — never the past.** It answers "what needs attention now and soon," not "what happened." Items that have served their purpose should drop off rather than accumulate as history; the board is a forward-looking dashboard, not an archive or log. When adding or changing features, honour this: surface what is upcoming, scope things to live/future context, and let what is done fade away (e.g. packing lists attach to current/future trips only).
+
 ## Running
 
 Must be served over HTTP (Gist sync and reliable script loading need it — opening `index.html` via `file://` will not work):
@@ -31,7 +35,7 @@ Commit directly to `main` — do **not** create feature branches. When asked to 
 - **`components.jsx`** — shared/household-ish panels (`ProjectPanel`, `ReadingPanel`, `ShoppingPanel`, `HabitPanel`, `ChoresPanel`, `ReminderPanel`, `GoalsPanel`) plus primitives like `AutoTextarea`, `EditButton`. Most panels are `memo`'d and follow an `{ items, onChange }` prop contract. On the finance and travel tabs the aspirational `GoalsPanel` sits at the top of the right-hand column (top-right).
 - **`academic.jsx`** — academic panels (`DeadlinesPanel`, `TeachingPanel`, `ServicePanel`) with their own kind/type color maps and deadline bucketing (`BUCKET_ORDER`).
 - **`finance.jsx`** — finance panels (`GrantPanel`, `BillsPanel`, `ReimbursementPanel`, `LoanPanel`, `SavingsPanel`, `InvestmentPanel`), `{ items, onChange, currency }` contract. `LoanPanel` tracks debts (`loan{name,lender,principal,outstanding,rate,emi,due}`) with a principal-paid progress bar and next-payment date (overdue/soon styled). Reuses progress-bar/cadence/chip patterns; bills feed the upcoming banners. Reimbursement claims carry an optional `due` date (overdue/soon styled, hidden once received). `GrantPanel` manages research grants as expandable cards (`grant{title,total,advance,expiry,heads[{name,amount,spent}]}`): each tracks total grant, advance taken, end date (expired/soon styled), and money allocated + spent per budget head (Travel, Contingency, Equipment, …), with a spent/allocated progress bar per head. Grant spending = sum of per-head `spent` (advance is informational only); remaining = total − spending.
-- **`travel.jsx`** — travel panels (`TripAlerts` action cards, `TripsPanel` expandable cards, `PackingPanel`, `WishlistPanel`, `DocumentsPanel`). Trip starts and document expiries feed the upcoming banners.
+- **`travel.jsx`** — travel panels (`TripAlerts` action cards, `TripsPanel` expandable cards, `PackingPanel`, `WishlistPanel`, `DocumentsPanel`). Trip starts and document expiries feed the upcoming banners. `PackingPanel` takes `{ items, trips, onChange }`: each packing item carries a `tripId`, and a dropdown scopes the list to one trip — the dropdown lists only current/future trips (end/start today or later), per the forward-looking philosophy.
 - **`tweaks-panel.jsx`** — a dev/design tweak UI (sliders, toggles, selects) toggled by keyboard; persists tweak values to localStorage. Injects its own CSS via `__TWEAKS_STYLE`.
 - **`styles.css`** — all styling (large, hand-written, oklch color space).
 

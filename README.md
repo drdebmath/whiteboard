@@ -4,6 +4,10 @@ A local-first personal dashboard for academic tasks, household lists, health hab
 
 Repository: <https://github.com/drdebmath/whiteboard>
 
+## Philosophy
+
+Whiteboard tracks the **current and the future — never the past.** It answers "what needs attention now and soon," not "what happened." Items that have served their purpose drop off rather than pile up as history; the board is a forward-looking dashboard, not an archive or a log. New features should honour this: surface what is upcoming, and let what is done fade away.
+
 You can use it on the web at <https://drdebmath.github.io/whiteboard/>, or run it locally:
 
 ```bash
