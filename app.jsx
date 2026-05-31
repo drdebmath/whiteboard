@@ -943,7 +943,7 @@ function App() {
             <div className="panels-col">
               <GoalsPanel
                 items={s.goals || []}
-                placeholder="e.g. fix back pain, stop snoring…"
+                placeholder="e.g. fix back pain, run a marathon…"
                 onChange={(goals) => safeUpdate((prev) => ({ ...prev, health: { ...prev.health, goals } }))}
               />
               <ReminderPanel
@@ -1108,7 +1108,7 @@ function App() {
           <Clock now={now} />
           <div className="header-sub header-sub-right">
             <span className="header-date">
-              {now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+              {now.toLocaleDateString(undefined, { weekday: "long" })}, {now.toLocaleDateString(undefined, { month: "long", day: "numeric" })}
             </span>
             {(stats.overdue > 0 || stats.week > 0) && (
               <span className="header-stats">
