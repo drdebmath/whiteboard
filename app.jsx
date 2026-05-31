@@ -471,6 +471,14 @@ function App() {
 
   useEffect(() => { stateRef.current = state; }, [state]);
 
+  // Keep every in-app form as a React-only interaction. A native submit falls
+  // back to navigating to the current page, which looks exactly like a reload.
+  useEffect(() => {
+    const preventNativeSubmit = (e) => e.preventDefault();
+    document.addEventListener("submit", preventNativeSubmit, true);
+    return () => document.removeEventListener("submit", preventNativeSubmit, true);
+  }, []);
+
   // ─── Density class ───
 
   useEffect(() => {
@@ -997,51 +1005,49 @@ function App() {
         const cur = tweaks.currency || "₹";
         return (
           <div className="panels panels-research">
-            <div className="panels-col">
-              <ProjectPanel
-                items={s.projects || []}
-                onChange={(projects) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, projects } }))}
-              />
-              <AdviseesPanel
-                items={s.students}
-                onChange={(students) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, students } }))}
-              />
-              <SubmissionsPanel
-                items={s.submissions}
-                onChange={(submissions) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, submissions } }))}
-              />
-              <ProposalsPanel
-                items={s.proposals}
-                currency={cur}
-                onChange={(proposals) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, proposals } }))}
-              />
-              <CFPPanel
-                items={s.cfps}
-                onChange={(cfps) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, cfps } }))}
-              />
-            </div>
-            <div className="panels-col">
-              <GoalsPanel
-                items={s.goals || []}
-                placeholder="e.g. land a major grant, graduate 3 PhDs…"
-                onChange={(goals) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, goals } }))}
-              />
-              <MetricsPanel
-                metrics={s.metrics || {}}
-                onChange={(metrics) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, metrics } }))}
-              />
-              <ReviewsPanel
-                items={s.reviews}
-                onChange={(reviews) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, reviews } }))}
-              />
-              <LettersPanel
-                items={s.letters}
-                onChange={(letters) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, letters } }))}
-              />
-              <ContactsPanel
-                items={s.contacts}
-                onChange={(contacts) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, contacts } }))}
-              />
+            <ProjectPanel
+              items={s.projects || []}
+              onChange={(projects) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, projects } }))}
+            />
+            <div className="research-columns">
+              <div className="panels-col">
+                <AdviseesPanel
+                  items={s.students}
+                  onChange={(students) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, students } }))}
+                />
+                <SubmissionsPanel
+                  items={s.submissions}
+                  onChange={(submissions) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, submissions } }))}
+                />
+                <ProposalsPanel
+                  items={s.proposals}
+                  currency={cur}
+                  onChange={(proposals) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, proposals } }))}
+                />
+                <CFPPanel
+                  items={s.cfps}
+                  onChange={(cfps) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, cfps } }))}
+                />
+              </div>
+              <div className="panels-col">
+                <GoalsPanel
+                  items={s.goals || []}
+                  placeholder="e.g. land a major grant, graduate 3 PhDs…"
+                  onChange={(goals) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, goals } }))}
+                />
+                <ReviewsPanel
+                  items={s.reviews}
+                  onChange={(reviews) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, reviews } }))}
+                />
+                <LettersPanel
+                  items={s.letters}
+                  onChange={(letters) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, letters } }))}
+                />
+                <ContactsPanel
+                  items={s.contacts}
+                  onChange={(contacts) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, contacts } }))}
+                />
+              </div>
             </div>
           </div>
         );

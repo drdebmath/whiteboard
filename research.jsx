@@ -469,39 +469,6 @@ const LettersPanel = memo(function LettersPanel({ items = [], onChange }) {
   );
 });
 
-/* ─── MetricsPanel ─── (single snapshot, not a list) */
-
-const MetricsPanel = memo(function MetricsPanel({ metrics = {}, onChange }) {
-  const set = (patch) => onChange({ ...metrics, ...patch, updated: Date.now() });
-  const updatedInfo = metrics.updated ? dueInfo(metrics.updated) : null;
-  const fields = [
-    { key: "hIndex", label: "h-index" },
-    { key: "citations", label: "Citations" },
-    { key: "i10", label: "i10-index" },
-  ];
-  return (
-    <div className="panel">
-      <div className="panel-header">Scholarly Metrics</div>
-      <div className="metrics-grid">
-        {fields.map((f) => (
-          <label key={f.key} className="metric-tile">
-            <span className="metric-label">{f.label}</span>
-            <input
-              className="metric-input"
-              type="number"
-              inputMode="numeric"
-              value={metrics[f.key] == null ? "" : metrics[f.key]}
-              onChange={(e) => set({ [f.key]: num(e.target.value) })}
-              placeholder="0"
-            />
-          </label>
-        ))}
-      </div>
-      {updatedInfo && <div className="metric-asof">Updated {updatedInfo.text}</div>}
-    </div>
-  );
-});
-
 /* ─── ContactsPanel ─── */
 
 const ContactsPanel = memo(function ContactsPanel({ items = [], onChange }) {
@@ -620,7 +587,6 @@ Object.assign(window, {
   CFPPanel,
   ReviewsPanel,
   LettersPanel,
-  MetricsPanel,
   ContactsPanel,
   TimetablePanel,
 });

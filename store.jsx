@@ -23,7 +23,7 @@ const MS = {
 
 const EMPTY_STATE = {
   academic: { deadlines: [], teaching: [], timetable: [], service: [], readings: [], goals: [] },
-  research: { projects: [], students: [], submissions: [], proposals: [], cfps: [], reviews: [], letters: [], contacts: [], metrics: { hIndex: 0, citations: 0, i10: 0, updated: null }, goals: [] },
+  research: { projects: [], students: [], submissions: [], proposals: [], cfps: [], reviews: [], letters: [], contacts: [], goals: [] },
   household: { chores: [], reminders: [], shopping: [], goals: [] },
   health: { habits: [], reminders: [], goals: [] },
   finance: { grants: [], bills: [], reimbursements: [], loans: [], savings: [], investments: [], goals: [] },
@@ -266,12 +266,6 @@ function normalizeState(parsed) {
         note: String(c.note || "").trim(),
         created: c.created || Date.now(),
       })),
-      metrics: {
-        hIndex: num((rs.metrics || {}).hIndex),
-        citations: num((rs.metrics || {}).citations),
-        i10: num((rs.metrics || {}).i10),
-        updated: (rs.metrics || {}).updated || null,
-      },
       goals: normalizeGoals(rs.goals),
     },
     household: {
