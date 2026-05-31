@@ -1219,7 +1219,12 @@ html:not(.dark) .academic-select { color-scheme: light; }
 
 /* Deadlines */
 .deadline-buckets { display: flex; flex-direction: column; gap: 14px; }
-.service-list { display: flex; flex-direction: column; gap: 5px; }
+.service-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 205px), 1fr));
+  gap: 8px;
+  align-items: start;
+}
 .deadline-bucket { display: flex; flex-direction: column; gap: 5px; }
 .deadline-bucket-title {
   font-size: 10.5px;
@@ -1256,42 +1261,8 @@ html:not(.dark) .academic-select { color-scheme: light; }
 .deadline-row .btn-delete { opacity: 0.5; }
 .deadline-row:hover .btn-delete { opacity: 1; }
 
-/* Service — split into Admin / Non-admin groups; each item is a card whose
-   title can wrap to two lines without crowding the chip and due date. */
-.service-groups {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px 22px;
-}
-.service-group { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
-.service-group-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 10.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--muted);
-  padding-bottom: 7px;
-  border-bottom: 1px solid var(--line);
-}
-.service-group-count {
-  font-weight: 600;
-  font-size: 10px;
-  color: var(--ink-2);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 1px 7px;
-  font-variant-numeric: tabular-nums;
-}
-.service-group .service-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 205px), 1fr));
-  gap: 8px;
-  align-items: start;
-}
+/* Service — institutional service items as cards whose title can wrap to two
+   lines without crowding the chip and due date. */
 .service-card {
   display: flex;
   flex-direction: column;
@@ -1526,6 +1497,7 @@ html:not(.dark) .academic-select { color-scheme: light; }
   bottom: 16px;
   left: 16px;
   display: flex;
+  align-items: baseline;
   gap: 14px;
   font-size: 11px;
   color: var(--muted);
@@ -2385,4 +2357,151 @@ html:not(.dark) .academic-select { color-scheme: light; }
 .project-overleaf-icon:hover {
   opacity: 1;
   background: oklch(0.62 0.17 145 / 0.14);
+}
+
+
+/* ════════════════ Research tab + current-view additions ════════════════ */
+
+.panels-research {
+  column-count: unset;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gap);
+}
+@media (max-width: 980px) {
+  .panels-research { flex-direction: column; }
+}
+
+/* muted "all deadlines passed" note on CFP cards */
+.grant-due.muted { color: var(--muted); }
+
+/* inline status selector on review / letter rows */
+.status-select {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: transparent;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+/* advisee milestones */
+.milestone-list { list-style: none; margin: 8px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.milestone-item { display: flex; align-items: center; gap: 6px; }
+.milestone-item.done .milestone-label { text-decoration: line-through; color: var(--muted); }
+.milestone-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  outline: none;
+}
+.milestone-label:focus { border-color: var(--accent); }
+
+/* metrics — single current snapshot, no history */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 4px 0 10px;
+}
+.metric-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.metric-label { font-size: 11px; color: var(--muted); letter-spacing: 0.02em; }
+.metric-input { font-size: 18px; font-weight: 600; width: 100%; background: transparent; border: none; color: var(--ink); outline: none; padding: 0; }
+.metric-asof { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.metric-note { margin-top: 8px; font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+/* contacts */
+.contact-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.contact-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.contact-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.contact-name { font-weight: 600; font-size: 13px; color: var(--ink); }
+.contact-aff { font-size: 11px; color: var(--muted); }
+.contact-note { font-size: 11px; color: var(--ink-2); }
+
+/* weekly timetable */
+.timetable-form { row-gap: 8px; }
+.timetable { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.timetable-day { display: flex; flex-direction: column; gap: 6px; }
+.timetable-day-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.timetable-day.is-today .timetable-day-name { color: var(--accent); }
+.timetable-slots { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.timetable-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--row-accent, var(--line-2));
+  border-radius: 6px;
+}
+.timetable-time { font-variant-numeric: tabular-nums; font-size: 12px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.timetable-course { flex: 1 1 auto; min-width: 0; font-size: 13px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.timetable-room { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+/* credits — sticky footer pinned to the bottom of the viewport. Sits below the
+   corner fabs (z 50+) and pads its sides so the centred text clears them. */
+.app-credits {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  text-align: center;
+  padding: 9px 60px 10px;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  background: color-mix(in oklch, var(--bg) 82%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-top: 1px solid var(--line);
+}
+.app-credits a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--line-2);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.app-credits a:hover { color: var(--ink); border-bottom-color: currentColor; }
+.app-credits-sep { opacity: 0.5; margin: 0 6px; }
+.welcome-credits {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.02em;
 }

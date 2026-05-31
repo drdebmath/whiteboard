@@ -1,5 +1,6 @@
 // store.jsx — data store with localStorage + optional GitHub Gist sync
-// State shape: academic (projects, deadlines, teaching, service, readings),
+// State shape: academic (deadlines, teaching, timetable, service, readings),
+// research (projects, advisees, submissions, proposals, …),
 // household (chores, reminders, shopping), health (habits, reminders).
 // Gist sync stores the board as a single JSON file in a private GitHub Gist.
 
@@ -21,7 +22,8 @@ const MS = {
 };
 
 const EMPTY_STATE = {
-  academic: { projects: [], deadlines: [], teaching: [], service: [], readings: [], goals: [] },
+  academic: { deadlines: [], teaching: [], timetable: [], service: [], readings: [], goals: [] },
+  research: { projects: [], students: [], submissions: [], proposals: [], cfps: [], reviews: [], letters: [], contacts: [], metrics: { hIndex: 0, citations: 0, i10: 0, updated: null }, goals: [] },
   household: { chores: [], reminders: [], shopping: [], goals: [] },
   health: { habits: [], reminders: [], goals: [] },
   finance: { grants: [], bills: [], reimbursements: [], loans: [], savings: [], investments: [], goals: [] },
@@ -40,12 +42,6 @@ function dateKey(d) {
 
 function todayKey() {
   return dateKey(new Date());
-}
-
-function dateKeyOffset(offsetDays) {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  return dateKey(d);
 }
 
 function daysBetweenKeys(a, b) {
@@ -91,57 +87,22 @@ function formatMoney(amount, symbol = "₹") {
   return `${n < 0 ? "-" : ""}${symbol}${abs}`;
 }
 
-function freqFromLegacy(freq) {
-  if (typeof freq === "string") return freq;
-  const n = Number(freq);
-  if (Number.isNaN(n)) return "weekly";
-  if (n <= 1) return "daily";
-  if (n <= 3) return "3days";
-  if (n <= 7) return "weekly";
-  if (n <= 14) return "biweekly";
-  return "monthly";
-}
-
+// Chore history is a list of completion timestamps (ms).
 function normalizeChoreHistory(history) {
-  return (history || [])
-    .map((h) => {
-      if (typeof h === "number" && !Number.isNaN(h)) return h;
-      if (typeof h === "string" && /^\d{4}-\d{2}-\d{2}$/.test(h)) {
-        return new Date(`${h}T12:00:00`).getTime();
-      }
-      const ts = new Date(h).getTime();
-      return Number.isNaN(ts) ? null : ts;
-    })
-    .filter((h) => h != null);
+  return (history || []).filter((h) => typeof h === "number" && !Number.isNaN(h));
 }
 
-// Habit history is a list of day keys ("YYYY-MM-DD"). Coerce legacy numeric
-// timestamps or date strings to local day keys so streak math stays consistent.
+// Habit history is a list of day keys ("YYYY-MM-DD"), de-duplicated.
 function normalizeHabitHistory(history) {
-  const out = [];
-  for (const h of history || []) {
-    if (typeof h === "string" && /^\d{4}-\d{2}-\d{2}$/.test(h)) {
-      out.push(h);
-      continue;
-    }
-    let ts = null;
-    if (typeof h === "number" && !Number.isNaN(h)) ts = h;
-    else {
-      const parsed = new Date(h).getTime();
-      if (!Number.isNaN(parsed)) ts = parsed;
-    }
-    if (ts != null) out.push(dateKey(new Date(ts)));
-  }
-  // De-duplicate while preserving order.
-  return [...new Set(out)];
+  return [...new Set((history || []).filter((h) => typeof h === "string" && /^\d{4}-\d{2}-\d{2}$/.test(h)))];
 }
 
 function normalizeDeadline(d) {
   return {
     id: d.id || uid(),
     kind: d.kind || "Other",
-    title: String(d.title || d.text || "").trim(),
-    due: parseDue(d.due ?? d.when),
+    title: String(d.title || "").trim(),
+    due: parseDue(d.due),
     done: !!d.done,
     createdAt: d.createdAt || Date.now(),
   };
@@ -151,8 +112,8 @@ function normalizeServiceItem(s) {
   return {
     id: s.id || uid(),
     type: s.type || "Other",
-    title: String(s.title || s.text || "").trim(),
-    due: parseDue(s.due ?? s.when),
+    title: String(s.title || "").trim(),
+    due: parseDue(s.due),
     createdAt: s.createdAt || Date.now(),
   };
 }
@@ -161,29 +122,24 @@ function normalizeChore(c) {
   return {
     id: c.id || uid(),
     text: String(c.text || "").trim(),
-    frequency: c.frequency || freqFromLegacy(c.freq),
+    frequency: c.frequency || "weekly",
     history: normalizeChoreHistory(c.history),
-    created: c.created || c.createdAt || Date.now(),
+    created: c.created || Date.now(),
   };
 }
 
 function normalizeState(parsed) {
   if (!parsed || typeof parsed !== "object") return null;
   const ac = parsed.academic || {};
-  let projects = Array.isArray(ac.projects) ? ac.projects : null;
-  if (!projects && Array.isArray(ac.todos)) {
-    projects = ac.todos.map((t) => ({
-      id: t.id || uid(),
-      name: t.text,
-      done: !!t.done,
-      overleaf: "",
-      github: "",
-      expanded: false,
-      createdAt: t.createdAt || Date.now(),
-    }));
-  }
+  const rs = parsed.research || {};
+  const hh = parsed.household || {};
+  const h = parsed.health || {};
+  const fin = parsed.finance || {};
+  const trv = parsed.travel || {};
+  const arr = (v) => (Array.isArray(v) ? v : []);
+
   const cleanStr = (s) => (s ? String(s).replace(/\[\[(.*?)\]\]/g, "$1").replace(/[\[\]]/g, "") : s);
-  projects = (Array.isArray(projects) ? projects : []).map((p) => {
+  const projects = arr(rs.projects).map((p) => {
     const notes = Array.isArray(p.notes)
       ? p.notes.map(cleanStr).join("\n")
       : cleanStr(p.notes || "");
@@ -198,94 +154,158 @@ function normalizeState(parsed) {
     };
   });
 
-  let deadlines = ac.deadlines;
-  if (!deadlines && Array.isArray(ac.reminders)) {
-    deadlines = ac.reminders;
-  }
-
-  const hh = parsed.household || {};
-  let chores = hh.chores;
-  if (!chores && Array.isArray(hh.todos)) {
-    chores = hh.todos.map((t) => ({
-      id: t.id || uid(),
-      text: t.text,
-      freq: 7,
-      history: t.done ? [dateKeyOffset(0)] : [],
-      createdAt: t.createdAt || Date.now(),
-    }));
-  }
-
-  const h = parsed.health || {};
-
   // Aspirational goals — distinct from dated deadlines. Shared shape across tabs.
   const normalizeGoals = (list) =>
-    (Array.isArray(list) ? list : []).map((g) => ({
+    arr(list).map((g) => ({
       id: g.id || uid(),
       text: String(g.text || "").trim(),
       note: String(g.note || "").trim(),
       achieved: !!g.achieved,
-      created: g.created || g.createdAt || Date.now(),
+      created: g.created || Date.now(),
     }));
-
-  const fin = parsed.finance || {};
-  const trv = parsed.travel || {};
-  const arr = (v) => (Array.isArray(v) ? v : []);
 
   return {
     academic: {
       ...EMPTY_STATE.academic,
-      projects,
-      deadlines: (deadlines || []).map(normalizeDeadline),
-      teaching: (ac.teaching || []).map((t) => ({
+      deadlines: arr(ac.deadlines).map(normalizeDeadline),
+      teaching: arr(ac.teaching).map((t) => ({
         id: t.id || uid(),
         course: t.course || "Uncategorized",
-        title: String(t.title || t.text || "").trim(),
+        title: String(t.title || "").trim(),
         total: Math.max(1, Number(t.total) || 1),
         done: Math.max(0, Number(t.done) || 0),
         createdAt: t.createdAt || Date.now(),
       })),
-      service: (ac.service || []).map(normalizeServiceItem),
-      readings: (Array.isArray(ac.readings) ? ac.readings : []).map((r) => ({
+      timetable: arr(ac.timetable).map((s) => ({
+        id: s.id || uid(),
+        title: String(s.title || "").trim(),
+        day: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].includes(s.day) ? s.day : "Mon",
+        start: String(s.start || "").trim(),
+        end: String(s.end || "").trim(),
+        location: String(s.location || "").trim(),
+        created: s.created || Date.now(),
+      })),
+      service: arr(ac.service).map(normalizeServiceItem),
+      readings: arr(ac.readings).map((r) => ({
         id: r.id || uid(),
-        text: String(r.text || r.title || "").trim(),
-        url: String(r.url || r.link || "").trim(),
+        text: String(r.text || "").trim(),
+        url: String(r.url || "").trim(),
         done: !!r.done,
-        created: r.created || r.createdAt || Date.now(),
+        created: r.created || Date.now(),
       })),
       goals: normalizeGoals(ac.goals),
     },
+    research: {
+      ...EMPTY_STATE.research,
+      projects,
+      students: arr(rs.students).map((s) => ({
+        id: s.id || uid(),
+        name: String(s.name || "").trim(),
+        program: String(s.program || "").trim(),
+        topic: String(s.topic || "").trim(),
+        started: s.started || "",
+        nextMeeting: parseDue(s.nextMeeting),
+        milestones: arr(s.milestones).map((m) => ({
+          id: m.id || uid(),
+          text: String(m.text || "").trim(),
+          due: parseDue(m.due),
+          done: !!m.done,
+        })),
+        notes: String(s.notes || "").trim(),
+        expanded: !!s.expanded,
+        created: s.created || Date.now(),
+      })),
+      submissions: arr(rs.submissions).map((s) => ({
+        id: s.id || uid(),
+        title: String(s.title || "").trim(),
+        venue: String(s.venue || "").trim(),
+        stage: ["drafting", "submitted", "under review", "revision", "accepted", "rejected"].includes(s.stage) ? s.stage : "drafting",
+        decisionDue: parseDue(s.decisionDue),
+        link: String(s.link || "").trim(),
+        created: s.created || Date.now(),
+      })),
+      proposals: arr(rs.proposals).map((p) => ({
+        id: p.id || uid(),
+        title: String(p.title || "").trim(),
+        agency: String(p.agency || "").trim(),
+        callDeadline: parseDue(p.callDeadline),
+        amount: num(p.amount),
+        status: ["drafting", "submitted", "awarded", "declined"].includes(p.status) ? p.status : "drafting",
+        created: p.created || Date.now(),
+      })),
+      cfps: arr(rs.cfps).map((c) => ({
+        id: c.id || uid(),
+        name: String(c.name || "").trim(),
+        abstractDue: parseDue(c.abstractDue),
+        paperDue: parseDue(c.paperDue),
+        notifyDate: parseDue(c.notifyDate),
+        link: String(c.link || "").trim(),
+        created: c.created || Date.now(),
+      })),
+      reviews: arr(rs.reviews).map((r) => ({
+        id: r.id || uid(),
+        venue: String(r.venue || "").trim(),
+        paper: String(r.paper || "").trim(),
+        due: parseDue(r.due),
+        done: !!r.done,
+        created: r.created || Date.now(),
+      })),
+      letters: arr(rs.letters).map((l) => ({
+        id: l.id || uid(),
+        student: String(l.student || "").trim(),
+        purpose: String(l.purpose || "").trim(),
+        due: parseDue(l.due),
+        done: !!l.done,
+        created: l.created || Date.now(),
+      })),
+      contacts: arr(rs.contacts).map((c) => ({
+        id: c.id || uid(),
+        name: String(c.name || "").trim(),
+        affiliation: String(c.affiliation || "").trim(),
+        email: String(c.email || "").trim(),
+        note: String(c.note || "").trim(),
+        created: c.created || Date.now(),
+      })),
+      metrics: {
+        hIndex: num((rs.metrics || {}).hIndex),
+        citations: num((rs.metrics || {}).citations),
+        i10: num((rs.metrics || {}).i10),
+        updated: (rs.metrics || {}).updated || null,
+      },
+      goals: normalizeGoals(rs.goals),
+    },
     household: {
       ...EMPTY_STATE.household,
-      chores: (chores || []).map(normalizeChore),
-      reminders: (hh.reminders || []).map((r) => ({
+      chores: arr(hh.chores).map(normalizeChore),
+      reminders: arr(hh.reminders).map((r) => ({
         id: r.id || uid(),
         text: String(r.text || "").trim(),
         when: r.when || "",
         done: !!r.done,
-        created: r.created || r.createdAt || Date.now(),
+        created: r.created || Date.now(),
       })),
-      shopping: (hh.shopping || []).map((s) => ({
+      shopping: arr(hh.shopping).map((s) => ({
         id: s.id || uid(),
         text: String(s.text || "").trim(),
         bought: !!s.bought,
-        created: s.created || s.createdAt || Date.now(),
+        created: s.created || Date.now(),
       })),
       goals: normalizeGoals(hh.goals),
     },
     health: {
       ...EMPTY_STATE.health,
-      habits: (h.habits || []).map((habit) => ({
+      habits: arr(h.habits).map((habit) => ({
         id: habit.id || uid(),
         text: String(habit.text || "").trim(),
         history: normalizeHabitHistory(habit.history),
-        created: habit.created || habit.createdAt || Date.now(),
+        created: habit.created || Date.now(),
       })),
-      reminders: (h.reminders || []).map((r) => ({
+      reminders: arr(h.reminders).map((r) => ({
         id: r.id || uid(),
         text: String(r.text || "").trim(),
         when: r.when || "",
         done: !!r.done,
-        created: r.created || r.createdAt || Date.now(),
+        created: r.created || Date.now(),
       })),
       goals: normalizeGoals(h.goals),
     },
@@ -293,60 +313,60 @@ function normalizeState(parsed) {
       ...EMPTY_STATE.finance,
       grants: arr(fin.grants).map((g) => ({
         id: g.id || uid(),
-        title: String(g.title || g.name || g.category || "").trim(),
+        title: String(g.title || "").trim(),
         total: num(g.total),
         advance: num(g.advance),
-        expiry: parseDue(g.expiry ?? g.when),
+        expiry: parseDue(g.expiry),
         heads: arr(g.heads).map((h) => ({
           id: h.id || uid(),
           name: String(h.name || "").trim(),
           amount: num(h.amount),
           spent: num(h.spent),
         })),
-        created: g.created || g.createdAt || Date.now(),
+        created: g.created || Date.now(),
       })),
       bills: arr(fin.bills).map((b) => ({
         id: b.id || uid(),
-        name: String(b.name || b.text || "").trim(),
+        name: String(b.name || "").trim(),
         amount: num(b.amount),
         cadence: b.cadence || "monthly",
-        due: parseDue(b.due ?? b.when),
-        created: b.created || b.createdAt || Date.now(),
+        due: parseDue(b.due),
+        created: b.created || Date.now(),
       })),
       reimbursements: arr(fin.reimbursements).map((r) => ({
         id: r.id || uid(),
-        title: String(r.title || r.text || "").trim(),
+        title: String(r.title || "").trim(),
         amount: num(r.amount),
         party: String(r.party || "").trim(),
         status: ["pending", "claimed", "received"].includes(r.status) ? r.status : "pending",
-        due: parseDue(r.due ?? r.when),
-        created: r.created || r.createdAt || Date.now(),
+        due: parseDue(r.due),
+        created: r.created || Date.now(),
       })),
       loans: arr(fin.loans).map((l) => ({
         id: l.id || uid(),
-        name: String(l.name || l.text || "").trim(),
+        name: String(l.name || "").trim(),
         lender: String(l.lender || "").trim(),
         principal: num(l.principal),
         outstanding: num(l.outstanding),
         rate: num(l.rate),
         emi: num(l.emi),
-        due: parseDue(l.due ?? l.when),
-        created: l.created || l.createdAt || Date.now(),
+        due: parseDue(l.due),
+        created: l.created || Date.now(),
       })),
       savings: arr(fin.savings).map((s) => ({
         id: s.id || uid(),
-        name: String(s.name || s.text || "").trim(),
+        name: String(s.name || "").trim(),
         target: num(s.target),
         current: num(s.current),
-        created: s.created || s.createdAt || Date.now(),
+        created: s.created || Date.now(),
       })),
       investments: arr(fin.investments).map((i) => ({
         id: i.id || uid(),
-        name: String(i.name || i.text || "").trim(),
+        name: String(i.name || "").trim(),
         type: i.type || "Other",
         invested: num(i.invested),
         value: num(i.value),
-        created: i.created || i.createdAt || Date.now(),
+        created: i.created || Date.now(),
       })),
       goals: normalizeGoals(fin.goals),
     },
@@ -354,7 +374,7 @@ function normalizeState(parsed) {
       ...EMPTY_STATE.travel,
       trips: arr(trv.trips).map((t) => ({
         id: t.id || uid(),
-        destination: String(t.destination || t.text || "").trim(),
+        destination: String(t.destination || "").trim(),
         start: t.start || "",
         end: t.end || "",
         purpose: t.purpose || "Personal",
@@ -368,28 +388,28 @@ function normalizeState(parsed) {
         })),
         notes: String(t.notes || "").trim(),
         link: String(t.link || "").trim(),
-        created: t.created || t.createdAt || Date.now(),
+        created: t.created || Date.now(),
       })),
       packing: arr(trv.packing).map((p) => ({
         id: p.id || uid(),
         text: String(p.text || "").trim(),
         packed: !!p.packed,
-        created: p.created || p.createdAt || Date.now(),
+        created: p.created || Date.now(),
       })),
       wishlist: arr(trv.wishlist).map((w) => ({
         id: w.id || uid(),
-        text: String(w.text || w.title || "").trim(),
+        text: String(w.text || "").trim(),
         note: String(w.note || "").trim(),
         visited: !!w.visited,
-        created: w.created || w.createdAt || Date.now(),
+        created: w.created || Date.now(),
       })),
       documents: arr(trv.documents).map((d) => ({
         id: d.id || uid(),
-        name: String(d.name || d.text || "").trim(),
+        name: String(d.name || "").trim(),
         kind: d.kind || "Other",
         number: String(d.number || "").trim(),
-        expiry: parseDue(d.expiry ?? d.due),
-        created: d.created || d.createdAt || Date.now(),
+        expiry: parseDue(d.expiry),
+        created: d.created || Date.now(),
       })),
       goals: normalizeGoals(trv.goals),
     },

@@ -9,22 +9,10 @@ function dueText(due) {
   return `${label} · ${rel}`;
 }
 
-const DEADLINE_KINDS = ["Conference", "Grant", "Course", "Review", "Talk", "Other"];
-const SERVICE_TYPES = ["Review", "Rec letter", "Committee", "Editorial", "Other"];
-
-// Which service types are administrative (governance/editorial duties) vs.
-// scholarly/mentoring work. Drives the two-column grouping in ServicePanel.
-const SERVICE_ADMIN = {
-  Review: false,
-  "Rec letter": false,
-  Committee: true,
-  Editorial: true,
-  Other: true,
-};
-const SERVICE_GROUPS = [
-  { key: "admin", label: "Admin" },
-  { key: "academic", label: "Academic" },
-];
+const DEADLINE_KINDS = ["Course", "Review", "Talk", "Other"];
+// Peer-review duties and recommendation letters live on the Research tab
+// (ReviewsPanel / LettersPanel); Service tracks institutional service only.
+const SERVICE_TYPES = ["Committee", "Editorial", "Other"];
 
 function bucketFor(ts) {
   if (!ts) return "Undated";
@@ -60,8 +48,6 @@ function groupByCourse(items) {
 }
 
 const KIND_COLORS = {
-  Conference: "oklch(0.64 0.14 30)",
-  Grant: "oklch(0.64 0.1 155)",
   Course: "oklch(0.64 0.12 248)",
   Review: "oklch(0.7 0.11 70)",
   Talk: "oklch(0.62 0.13 300)",
@@ -69,8 +55,6 @@ const KIND_COLORS = {
 };
 
 const TYPE_COLORS = {
-  Review: "oklch(0.64 0.14 30)",
-  "Rec letter": "oklch(0.64 0.12 248)",
   Committee: "oklch(0.64 0.1 155)",
   Editorial: "oklch(0.7 0.11 70)",
   Other: "oklch(0.62 0.02 270)",
@@ -447,55 +431,41 @@ const ServicePanel = memo(function ServicePanel({ items = [], onChange }) {
       {!items.length && <div className="panel-empty">No service items yet</div>}
 
       {items.length > 0 && (
-        <div className="service-groups">
-          {SERVICE_GROUPS.map((grp) => {
-            const list = items.filter((i) => (SERVICE_ADMIN[i.type] ? "admin" : "academic") === grp.key);
-            if (!list.length) return null;
-            return (
-              <div className="service-group" key={grp.key}>
-                <div className="service-group-title">
-                  {grp.label}
-                  <span className="service-group-count">{list.length}</span>
+        <div className="service-list">
+          {items.map((item) => (
+            <div
+              key={item.id}
+              data-mb-id={item.id}
+              className="service-card"
+              style={{ "--row-accent": TYPE_COLORS[item.type] || "var(--line-2)" }}
+            >
+              {editingId === item.id ? (
+                <div className="service-card-edit">
+                  <select className="academic-select" value={editType} onChange={(e) => setEditType(e.target.value)}>
+                    {SERVICE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <input className="academic-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                  <DatePicker className="academic-input" value={editDate} onChange={setEditDate} />
+                  <div className="service-card-edit-actions">
+                    <button className="panel-text-btn" onClick={() => saveEdit(item.id)}>Save</button>
+                    <button className="panel-text-btn" onClick={() => setEditingId(null)}>Cancel</button>
+                  </div>
                 </div>
-                <div className="service-list">
-                  {list.map((item) => (
-                    <div
-                      key={item.id}
-                      data-mb-id={item.id}
-                      className="service-card"
-                      style={{ "--row-accent": TYPE_COLORS[item.type] || "var(--line-2)" }}
-                    >
-                      {editingId === item.id ? (
-                        <div className="service-card-edit">
-                          <select className="academic-select" value={editType} onChange={(e) => setEditType(e.target.value)}>
-                            {SERVICE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                          </select>
-                          <input className="academic-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-                          <DatePicker className="academic-input" value={editDate} onChange={setEditDate} />
-                          <div className="service-card-edit-actions">
-                            <button className="panel-text-btn" onClick={() => saveEdit(item.id)}>Save</button>
-                            <button className="panel-text-btn" onClick={() => setEditingId(null)}>Cancel</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="service-card-top">
-                            <Chip label={item.type} color={TYPE_COLORS[item.type]} />
-                            <div className="service-card-actions">
-                              <EditButton onClick={() => startEdit(item)} />
-                              <button className="btn-delete" aria-label="Delete" onClick={() => remove(item.id)}>×</button>
-                            </div>
-                          </div>
-                          <div className="service-title">{item.title}</div>
-                          {item.due && <div className="service-due">{dueText(item.due)}</div>}
-                        </>
-                      )}
+              ) : (
+                <>
+                  <div className="service-card-top">
+                    <Chip label={item.type} color={TYPE_COLORS[item.type]} />
+                    <div className="service-card-actions">
+                      <EditButton onClick={() => startEdit(item)} />
+                      <button className="btn-delete" aria-label="Delete" onClick={() => remove(item.id)}>×</button>
                     </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+                  </div>
+                  <div className="service-title">{item.title}</div>
+                  {item.due && <div className="service-due">{dueText(item.due)}</div>}
+                </>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>

@@ -36,6 +36,7 @@ function isTextOnlyChange(a, b) {
 
 const CATEGORIES = [
   { id: "academic", label: "Academic", accent: "oklch(0.62 0.115 250)", soft: "oklch(0.62 0.115 250 / 0.13)" },
+  { id: "research", label: "Research", accent: "oklch(0.58 0.13 275)", soft: "oklch(0.58 0.13 275 / 0.13)" },
   { id: "household", label: "Household", accent: "oklch(0.62 0.095 158)", soft: "oklch(0.62 0.095 158 / 0.13)" },
   { id: "health", label: "Health", accent: "oklch(0.64 0.13 38)", soft: "oklch(0.64 0.13 38 / 0.13)" },
   { id: "finance", label: "Finance", accent: "oklch(0.62 0.10 195)", soft: "oklch(0.62 0.10 195 / 0.13)" },
@@ -52,6 +53,13 @@ const CATEGORIES = [
 const DATE_SOURCES = [
   { cat: "academic", kind: "Deadline", list: (s) => s.academic.deadlines, date: (i) => i.due, skip: (i) => i.done, text: (i) => i.title || i.text },
   { cat: "academic", kind: "Service", list: (s) => s.academic.service, date: (i) => i.due, text: (i) => i.title || i.text },
+  { cat: "research", kind: "Meeting", list: (s) => s.research.students, date: (i) => i.nextMeeting, text: (i) => `${i.name} meeting` },
+  { cat: "research", kind: "Milestone", list: (s) => s.research.students, date: (i) => window.soonestMilestone(i), text: (i) => `${i.name} milestone` },
+  { cat: "research", kind: "Submission", list: (s) => s.research.submissions, date: (i) => i.decisionDue, skip: (i) => i.stage === "accepted" || i.stage === "rejected", text: (i) => `${i.title} decision` },
+  { cat: "research", kind: "Proposal", list: (s) => s.research.proposals, date: (i) => i.callDeadline, skip: (i) => i.status === "awarded" || i.status === "declined", text: (i) => `${i.title} call` },
+  { cat: "research", kind: "CFP", list: (s) => s.research.cfps, date: (i) => window.nextCfpDeadline(i), text: (i) => i.name },
+  { cat: "research", kind: "Review", list: (s) => s.research.reviews, date: (i) => i.due, skip: (i) => i.done, text: (i) => `Review ${i.venue}` },
+  { cat: "research", kind: "Letter", list: (s) => s.research.letters, date: (i) => i.due, skip: (i) => i.done, text: (i) => `Letter for ${i.student}` },
   { cat: "household", kind: "Reminder", list: (s) => s.household.reminders, date: (i) => i.when, skip: (i) => i.done, text: (i) => i.text },
   { cat: "health", kind: "Reminder", list: (s) => s.health.reminders, date: (i) => i.when, skip: (i) => i.done, text: (i) => i.text },
   { cat: "finance", kind: "Bill", list: (s) => s.finance.bills, date: (i) => i.due, text: (i) => i.name },
@@ -345,7 +353,7 @@ function WelcomeModal({ firstRun, onClose }) {
           unless you turn on sync.
         </p>
 
-        <div className="welcome-section-label">Your five tabs</div>
+        <div className="welcome-section-label">Your six tabs</div>
         <ul className="welcome-tabs">
           {CATEGORIES.map((c, i) => (
             <li key={c.id} className="welcome-tab" style={{ "--cat": c.accent }}>
@@ -363,9 +371,15 @@ function WelcomeModal({ firstRun, onClose }) {
             what’s <strong>next up</strong> across every tab.
           </li>
           <li>
-            Press <kbd>1</kbd>–<kbd>5</kbd> to switch tabs, <kbd>⌘F</kbd> to
+            Press <kbd>1</kbd>–<kbd>6</kbd> to switch tabs, <kbd>⌘F</kbd> to
             search, <kbd>⌘Z</kbd> to undo, and <kbd>⌘⇧T</kbd> for appearance
             tweaks (or use the <span className="welcome-gear">⚙</span> button).
+          </li>
+          <li>
+            Whiteboard is built around <strong>what’s in front of you now</strong> —
+            it surfaces the next thing due rather than burying you in everything at
+            once. Use the <strong>Calendar</strong> button to export upcoming dates
+            as an <code>.ics</code> file for your calendar app.
           </li>
           <li>
             Use <strong>Gist</strong> in the bottom bar to optionally sync across
@@ -377,6 +391,10 @@ function WelcomeModal({ firstRun, onClose }) {
             corner.
           </li>
         </ul>
+
+        <div className="welcome-credits">
+          Concept by <a href="https://drdebmath.github.io" target="_blank" rel="noopener noreferrer">Dr. Debasish Pattanayak</a> · Designed by Claude
+        </div>
 
         <div className="modal-actions">
           <button type="button" className="modal-btn modal-btn-primary" onClick={onClose}>
@@ -390,7 +408,8 @@ function WelcomeModal({ firstRun, onClose }) {
 
 // Short, friendly per-tab descriptions used in the welcome guide.
 const CATEGORY_BLURBS = {
-  academic: "Projects, deadlines, teaching, service, readings.",
+  academic: "Deadlines, teaching, timetable, service, readings.",
+  research: "Projects, advisees, submissions, proposals, calls, reviews.",
   household: "Chores, shopping lists and reminders.",
   health: "Habits to keep and health reminders.",
   finance: "Grants, bills, loans, savings and investments.",
@@ -628,10 +647,11 @@ function App() {
 
       if (!isInput) {
         if (e.key === "1") setTab("academic");
-        if (e.key === "2") setTab("household");
-        if (e.key === "3") setTab("health");
-        if (e.key === "4") setTab("finance");
-        if (e.key === "5") setTab("travel");
+        if (e.key === "2") setTab("research");
+        if (e.key === "3") setTab("household");
+        if (e.key === "4") setTab("health");
+        if (e.key === "5") setTab("finance");
+        if (e.key === "6") setTab("travel");
       }
     };
     window.addEventListener("keydown", handler);
@@ -655,12 +675,43 @@ function App() {
     for (const s of state.academic.service) {
       if ((s.title || "").toLowerCase().includes(q)) results.push({ cat: "academic", type: "Service", text: s.title || s.text, id: s.id });
     }
-    for (const p of state.academic.projects) {
-      if ((p.name || "").toLowerCase().includes(q)) results.push({ cat: "academic", type: "Project", text: p.name, id: p.id });
-    }
     for (const r of state.academic.readings) {
       const label = r.text || r.title || "";
       if (label.toLowerCase().includes(q)) results.push({ cat: "academic", type: "Reading", text: label, id: r.id });
+    }
+    for (const s of state.academic.timetable) {
+      const label = `${s.title || ""} ${s.location || ""}`;
+      if (label.toLowerCase().includes(q)) results.push({ cat: "academic", type: "Timetable", text: s.title, id: s.id });
+    }
+    for (const p of state.research.projects) {
+      if ((p.name || "").toLowerCase().includes(q)) results.push({ cat: "research", type: "Project", text: p.name, id: p.id });
+    }
+    for (const st of state.research.students) {
+      const label = `${st.name || ""} ${st.topic || ""} ${st.program || ""}`;
+      if (label.toLowerCase().includes(q)) results.push({ cat: "research", type: "Advisee", text: st.name, id: st.id });
+    }
+    for (const sb of state.research.submissions) {
+      const label = `${sb.title || ""} ${sb.venue || ""}`;
+      if (label.toLowerCase().includes(q)) results.push({ cat: "research", type: "Submission", text: sb.title, id: sb.id });
+    }
+    for (const p of state.research.proposals) {
+      const label = `${p.title || ""} ${p.agency || ""}`;
+      if (label.toLowerCase().includes(q)) results.push({ cat: "research", type: "Proposal", text: p.title, id: p.id });
+    }
+    for (const c of state.research.cfps) {
+      if ((c.name || "").toLowerCase().includes(q)) results.push({ cat: "research", type: "CFP", text: c.name, id: c.id });
+    }
+    for (const r of state.research.reviews) {
+      const label = `${r.venue || ""} ${r.paper || ""}`;
+      if (label.toLowerCase().includes(q)) results.push({ cat: "research", type: "Review", text: r.venue, id: r.id });
+    }
+    for (const l of state.research.letters) {
+      const label = `${l.student || ""} ${l.purpose || ""}`;
+      if (label.toLowerCase().includes(q)) results.push({ cat: "research", type: "Letter", text: l.student, id: l.id });
+    }
+    for (const c of state.research.contacts) {
+      const label = `${c.name || ""} ${c.affiliation || ""} ${c.email || ""}`;
+      if (label.toLowerCase().includes(q)) results.push({ cat: "research", type: "Contact", text: c.name, id: c.id });
     }
     for (const c of state.household.chores) {
       if ((c.text || "").toLowerCase().includes(q)) results.push({ cat: "household", type: "Chore", text: c.text, id: c.id });
@@ -712,7 +763,7 @@ function App() {
     for (const d of state.travel.documents) {
       if ((d.name || "").toLowerCase().includes(q)) results.push({ cat: "travel", type: "Document", text: d.name, id: d.id });
     }
-    for (const cat of ["academic", "household", "health", "finance", "travel"]) {
+    for (const cat of ["academic", "research", "household", "health", "finance", "travel"]) {
       for (const g of state[cat].goals || []) {
         const label = `${g.text || ""} ${g.note || ""}`;
         if (label.toLowerCase().includes(q)) results.push({ cat, type: "Goal", text: g.text, id: g.id });
@@ -758,6 +809,44 @@ function App() {
     const a = document.createElement("a");
     a.href = url;
     a.download = `whiteboard-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [state]);
+
+  // ─── Calendar (.ics) export ───
+  //
+  // Every dated item across the board becomes an all-day VEVENT, so the same
+  // dates the banners surface can be pulled into any calendar app.
+
+  const handleIcsExport = useCallback(() => {
+    const pad = (n) => String(n).padStart(2, "0");
+    const dt = (ts) => {
+      const d = new Date(ts);
+      return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}`;
+    };
+    const esc = (s) => String(s || "").replace(/[\\;,]/g, (m) => "\\" + m).replace(/\n/g, "\\n");
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
+    const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Whiteboard//EN", "CALSCALE:GREGORIAN"];
+    let i = 0;
+    eachDatedItem(state, ({ ts, kind, text }) => {
+      const day = dt(ts);
+      const next = dt(ts + MS.DAY);
+      lines.push(
+        "BEGIN:VEVENT",
+        `UID:whiteboard-${i++}-${ts}@whiteboard`,
+        `DTSTAMP:${stamp}`,
+        `DTSTART;VALUE=DATE:${day}`,
+        `DTEND;VALUE=DATE:${next}`,
+        `SUMMARY:${esc(`[${kind}] ${text}`)}`,
+        "END:VEVENT"
+      );
+    });
+    lines.push("END:VCALENDAR");
+    const blob = new Blob([lines.join("\r\n")], { type: "text/calendar" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `whiteboard-${new Date().toISOString().slice(0, 10)}.ics`;
     a.click();
     URL.revokeObjectURL(url);
   }, [state]);
@@ -889,13 +978,13 @@ function App() {
               items={s.teaching}
               onChange={(teaching) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, teaching } }))}
             />
+            <TimetablePanel
+              items={s.timetable || []}
+              onChange={(timetable) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, timetable } }))}
+            />
             <ServicePanel
               items={s.service}
               onChange={(service) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, service } }))}
-            />
-            <ProjectPanel
-              items={s.projects || []}
-              onChange={(projects) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, projects } }))}
             />
             <ReadingPanel
               items={s.readings || []}
@@ -903,6 +992,60 @@ function App() {
             />
           </div>
         );
+
+      case "research": {
+        const cur = tweaks.currency || "₹";
+        return (
+          <div className="panels panels-research">
+            <div className="panels-col">
+              <ProjectPanel
+                items={s.projects || []}
+                onChange={(projects) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, projects } }))}
+              />
+              <AdviseesPanel
+                items={s.students}
+                onChange={(students) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, students } }))}
+              />
+              <SubmissionsPanel
+                items={s.submissions}
+                onChange={(submissions) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, submissions } }))}
+              />
+              <ProposalsPanel
+                items={s.proposals}
+                currency={cur}
+                onChange={(proposals) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, proposals } }))}
+              />
+              <CFPPanel
+                items={s.cfps}
+                onChange={(cfps) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, cfps } }))}
+              />
+            </div>
+            <div className="panels-col">
+              <GoalsPanel
+                items={s.goals || []}
+                placeholder="e.g. land a major grant, graduate 3 PhDs…"
+                onChange={(goals) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, goals } }))}
+              />
+              <MetricsPanel
+                metrics={s.metrics || {}}
+                onChange={(metrics) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, metrics } }))}
+              />
+              <ReviewsPanel
+                items={s.reviews}
+                onChange={(reviews) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, reviews } }))}
+              />
+              <LettersPanel
+                items={s.letters}
+                onChange={(letters) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, letters } }))}
+              />
+              <ContactsPanel
+                items={s.contacts}
+                onChange={(contacts) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, contacts } }))}
+              />
+            </div>
+          </div>
+        );
+      }
 
       case "household":
         return (
@@ -1202,6 +1345,9 @@ function App() {
         <button className="sync-btn" onClick={triggerImport} title="Import JSON">
           Import
         </button>
+        <button className="sync-btn" onClick={handleIcsExport} title="Export upcoming dates as .ics">
+          Calendar
+        </button>
         <button className="sync-btn" onClick={handleUndo} title="Undo (Ctrl+Z)">
           Undo
         </button>
@@ -1227,10 +1373,20 @@ function App() {
 
       {/* Keyboard hints */}
       <div className="keyboard-hints">
-        <span>1–5 — switch tabs</span>
+        <span>1–6 — switch tabs</span>
         <span>⌘F — search</span>
         <span>⌘Z — undo</span>
         <span>⌘⇧T — tweaks</span>
+      </div>
+
+      {/* Credits */}
+      <div className="app-credits">
+        Concept by{" "}
+        <a href="https://drdebmath.github.io" target="_blank" rel="noopener noreferrer">
+          Dr. Debasish Pattanayak
+        </a>
+        <span className="app-credits-sep">·</span>
+        Designed by Claude
       </div>
 
       {/* Undo toast */}
