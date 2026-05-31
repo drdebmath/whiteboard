@@ -3,7 +3,7 @@
 // Panels follow the { items, onChange } contract; expandable cards reuse project-card styling.
 
 const { useState, memo } = React;
-const { uid, num } = window.WhiteboardStore;
+const { uid, num, safeHref } = window.WhiteboardStore;
 const { formatWhen, Chip } = window;
 
 /* ─── shared bits ─── */
@@ -525,41 +525,67 @@ const ContactsPanel = memo(function ContactsPanel({ items = [], onChange }) {
   const [name, setName] = useState("");
   const [affiliation, setAffiliation] = useState("");
   const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState("");
+  const [editingId, setEditingId] = useState(null);
+
+  const resetForm = () => { setName(""); setAffiliation(""); setEmail(""); setWebsite(""); setEditingId(null); setShowForm(false); };
 
   const add = (e) => {
     e.preventDefault();
     const n = name.trim();
     if (!n) return;
-    onChange([...items, { id: uid(), name: n, affiliation: affiliation.trim(), email: email.trim(), note: "", created: Date.now() }]);
-    setName(""); setAffiliation(""); setEmail(""); setShowForm(false);
+    const fields = { name: n, affiliation: affiliation.trim(), email: email.trim(), website: website.trim() };
+    if (editingId) {
+      onChange(items.map((i) => (i.id === editingId ? { ...i, ...fields } : i)));
+    } else {
+      onChange([...items, { id: uid(), ...fields, note: "", created: Date.now() }]);
+    }
+    resetForm();
   };
-  const remove = (id) => onChange(items.filter((i) => i.id !== id));
+  const startEdit = (c) => { setEditingId(c.id); setShowForm(true); setName(c.name || ""); setAffiliation(c.affiliation || ""); setEmail(c.email || ""); setWebsite(c.website || ""); };
+  const remove = (id) => { if (id === editingId) resetForm(); onChange(items.filter((i) => i.id !== id)); };
 
   return (
     <div className="panel">
       <div className="panel-header">
         <span>Collaborators &amp; Contacts</span>
-        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+        <button className="academic-add-btn" onClick={() => (showForm ? resetForm() : setShowForm(true))}>{showForm ? "Cancel" : "+ Add"}</button>
       </div>
       {showForm && (
         <form className="academic-form" onSubmit={add}>
           <input className="academic-input sm" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
           <input className="academic-input sm" value={affiliation} onChange={(e) => setAffiliation(e.target.value)} placeholder="Affiliation" />
           <input className="academic-input sm" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
-          <button type="submit" className="academic-submit">Add</button>
+          <input className="academic-input sm" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="Website" />
+          <button type="submit" className="academic-submit">{editingId ? "Save" : "Add"}</button>
         </form>
       )}
       {!items.length && <div className="panel-empty">No contacts yet</div>}
       <ul className="todo-list">
         {items.map((c) => (
-          <li key={c.id} data-mb-id={c.id} className="reimb-item">
+          <li key={c.id} data-mb-id={c.id} className="reimb-item contact-item">
             <span className="reimb-title">
               {c.name}
               {c.affiliation ? <span className="reimb-party"> · {c.affiliation}</span> : null}
             </span>
             {c.email && (
-              <a className="contact-email" href={"mailto:" + encodeURIComponent(c.email).replace(/%40/g, "@")}>{c.email}</a>
+              <a className="contact-icon" href={"mailto:" + encodeURIComponent(c.email).replace(/%40/g, "@")} title={c.email} aria-label={"Email " + c.name}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                  <path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+              </a>
             )}
+            {safeHref(c.website) && (
+              <a className="contact-icon" href={safeHref(c.website)} target="_blank" rel="noopener noreferrer" title={c.website} aria-label={c.name + " website"}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="2" y1="12" x2="22" y2="12" />
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                </svg>
+              </a>
+            )}
+            <EditButton onClick={() => startEdit(c)} />
             <button className="btn-delete" aria-label="Delete" onClick={() => remove(c.id)}>×</button>
           </li>
         ))}

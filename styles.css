@@ -989,6 +989,9 @@ html:not(.dark) .datetime-input { color-scheme: light; }
   transition: border-color 0.15s ease, color 0.15s ease;
 }
 .external-link:hover { border-color: var(--accent); color: var(--accent); }
+.contact-icon { flex-shrink: 0; display: inline-flex; align-items: center; padding: 0 3px; color: var(--muted); text-decoration: none; transition: color 0.15s ease; }
+.contact-icon:hover { color: var(--accent); }
+.contact-item .reimb-title { min-width: 0; flex-basis: 60%; overflow-wrap: anywhere; }
 .project-task-list { display: flex; flex-direction: column; gap: 6px; }
 .project-task-list .todo-list { gap: 0; }
 

@@ -263,6 +263,7 @@ function normalizeState(parsed) {
         name: String(c.name || "").trim(),
         affiliation: String(c.affiliation || "").trim(),
         email: String(c.email || "").trim(),
+        website: String(c.website || "").trim(),
         note: String(c.note || "").trim(),
         created: c.created || Date.now(),
       })),
