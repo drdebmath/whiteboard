@@ -1074,7 +1074,7 @@ function App() {
       </nav>
 
       {/* Panels or search results */}
-      <main className="app-main">
+      <main className="app-main" style={{ "--tab-tint": cat?.accent }}>
         {searchQuery.trim() ? renderSearchResults() : renderPanels(tab)}
       </main>
 

@@ -10,10 +10,14 @@
   --font-mono: "Geist Mono", ui-monospace, monospace;
   --font-size-base: 14px;
 
-  /* Surfaces — warm paper (light defaults; dark mode overrides below) */
+  /* Surfaces — warm paper (light defaults; dark mode overrides below).
+     The `-raw` aliases hold the untinted base so the per-tab tint (applied on
+     .app-main) can color-mix against them without a self-referential cycle. */
   --bg: oklch(0.971 0.005 75);
-  --surface: oklch(0.995 0.003 75);
-  --surface-2: oklch(0.948 0.006 72);
+  --surface-raw: oklch(0.995 0.003 75);
+  --surface-2-raw: oklch(0.948 0.006 72);
+  --surface: var(--surface-raw);
+  --surface-2: var(--surface-2-raw);
   --ink: oklch(0.26 0.012 60);
   --ink-2: oklch(0.45 0.012 62);
   --muted: oklch(0.605 0.012 65);
@@ -70,8 +74,10 @@
 /* ── Dark mode (warm ink — switched on by time of day or the tweak) ─────── */
 html.dark {
   --bg: oklch(0.175 0.008 65);
-  --surface: oklch(0.218 0.009 65);
-  --surface-2: oklch(0.265 0.011 65);
+  --surface-raw: oklch(0.218 0.009 65);
+  --surface-2-raw: oklch(0.265 0.011 65);
+  --surface: var(--surface-raw);
+  --surface-2: var(--surface-2-raw);
   --ink: oklch(0.95 0.005 75);
   --ink-2: oklch(0.78 0.009 72);
   --muted: oklch(0.605 0.013 70);
@@ -403,7 +409,23 @@ a { color: var(--accent); }
 }
 
 /* ── Main / panel layout ────────────────────────────────────────────────── */
-.app-main { min-height: 200px; }
+/* Each tab carries a hint of its category color: --tab-tint (the active
+   category accent) is set inline on .app-main, then mixed into the card and
+   item surfaces here so a tab's cards read as belonging together — instead of
+   a uniform gray shared across every tab. --tab-fill is the translucent
+   overlay laid over the (opacity-tweakable) panel background. */
+.app-main {
+  min-height: 200px;
+  --surface:   color-mix(in oklch, var(--tab-tint, transparent) 5%, var(--surface-raw));
+  --surface-2: color-mix(in oklch, var(--tab-tint, transparent) 9%, var(--surface-2-raw));
+  --tab-fill:  color-mix(in oklch, var(--tab-tint, transparent) 6%, transparent);
+}
+/* Dark mode reads tint at lower contrast, so push the mixes a little harder. */
+html.dark .app-main {
+  --surface:   color-mix(in oklch, var(--tab-tint, transparent) 9%,  var(--surface-raw));
+  --surface-2: color-mix(in oklch, var(--tab-tint, transparent) 14%, var(--surface-2-raw));
+  --tab-fill:  color-mix(in oklch, var(--tab-tint, transparent) 11%, transparent);
+}
 
 /* Weighted grid: a base track of ~300px yields up to 3 columns at full width.
    High-worth, content-heavy panels span two tracks so they read as the anchor
@@ -478,8 +500,10 @@ a { color: var(--accent); }
 
 /* ── Panel ────────────────────────────────────────────────────────────── */
 .panel {
-  background: var(--panel-bg);
-  border: 1px solid var(--line);
+  /* Tab tint overlaid on the (opacity-tweakable) panel-bg, so cards on each
+     tab carry a hint of the category color without losing translucency. */
+  background: linear-gradient(var(--tab-fill, transparent), var(--tab-fill, transparent)), var(--panel-bg);
+  border: 1px solid color-mix(in oklch, var(--tab-tint, transparent) 15%, var(--line));
   border-radius: var(--panel-radius);
   padding: var(--pad);
   display: flex;
@@ -491,7 +515,7 @@ a { color: var(--accent); }
 }
 .panel:hover {
   box-shadow: var(--panel-shadow-hover);
-  border-color: var(--line-2);
+  border-color: color-mix(in oklch, var(--tab-tint, transparent) 22%, var(--line-2));
 }
 /* Projects reads as the academic anchor: a touch more lift. */
 .panels-academic > .panel:nth-child(5) {
@@ -515,8 +539,8 @@ a { color: var(--accent); }
   height: 16px;
   margin-right: -1px;
   border-radius: 999px;
-  background: var(--accent);
-  opacity: 0.6;
+  background: var(--tab-tint, var(--accent));
+  opacity: 0.7;
 }
 /* Push any trailing control (add / clear button) to the right edge. */
 .panel-header > button { margin-left: auto; }
