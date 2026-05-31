@@ -64,7 +64,10 @@ Color carries meaning. We do not decorate with it.
   apart, so don't add a third red.
 
 Color must survive both themes and any hue. Use the tokens; never hardcode an
-`rgb()`/`#hex` (the one offender, `.help-fab`, is a bug to fix, not a precedent).
+`rgb()`/`#hex`. The two floating launchers — the help `?` (`.help-fab`) and the
+Tweaks `⚙` (`.tw-fab`) — are a matched pair and both read from `--panel-bg` /
+`--line` / `--accent`, so they adapt together. (The Tweaks *panel* keeps its own
+deliberately dark aesthetic; only its launcher harmonizes.)
 
 ---
 
@@ -138,8 +141,8 @@ Buttons that trigger the doorway are also unified: the pill `+ Add`
     anchor across the width.
   - Full-width anchor + sub-columns — research, where Projects span and the rest
     splits.
-  The legacy 3-column `column-count` masonry on the base `.panels` rule is now
-  **unused** — every tab overrides it. It is dead code (see plan).
+  The bare `.panels` class carries no layout of its own — each tab's `.panels-*`
+  modifier sets `display:grid`/`flex` and its own gaps.
 - **Right-hand column = aspiration.** `GoalsPanel` sits top-right on finance,
   travel, research, household, health. Goals are the forward-looking "why";
   keeping them in a consistent corner is part of the language.

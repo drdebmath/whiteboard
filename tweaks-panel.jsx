@@ -399,18 +399,18 @@ function TweaksPanel({ title = 'Tweaks', children }) {
           width: 40,
           height: 40,
           borderRadius: 12,
-          border: '1px solid rgba(255,255,255,0.08)',
-          background: 'rgba(22,22,30,0.8)',
+          border: '1px solid var(--line)',
+          background: 'var(--panel-bg)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
-          color: '#a78bfa',
+          color: 'var(--accent)',
           fontSize: 18,
           cursor: 'pointer',
           zIndex: 99998,
           display: hidden ? 'flex' : 'none',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+          boxShadow: 'var(--panel-shadow)',
         }}
       >
         ⚙

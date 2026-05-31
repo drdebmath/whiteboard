@@ -427,23 +427,10 @@ html.dark .app-main {
   --tab-fill:  color-mix(in oklch, var(--tab-tint, transparent) 11%, transparent);
 }
 
-/* Weighted grid: a base track of ~300px yields up to 3 columns at full width.
-   High-worth, content-heavy panels span two tracks so they read as the anchor
-   of each tab; lightweight list panels stay single-width. grid-auto-flow:dense
-   back-fills the gaps a wide panel would otherwise leave. Everything collapses
-   to one column on narrow screens (see responsive block). */
-/* Masonry layout: panels pack by height into balanced columns so a short
-   panel (e.g. Deadlines) never inherits the height of a tall neighbour
-   (e.g. Service) and leaves dead space. Projects breaks the column flow to
-   anchor the academic tab full-width. */
-.panels {
-  column-count: 3;
-  column-gap: var(--gap);
-}
-.panels > .panel {
-  break-inside: avoid;
-  margin-bottom: var(--gap);
-}
+/* Layout lives entirely on the per-tab .panels-* modifiers below: a 2-col grid
+   with full-width breakouts for Academic, a full-width anchor + sub-columns for
+   Research, and two flex columns for Household / Health / Finance / Travel. The
+   bare .panels class carries no layout of its own. */
 /* Household & Health use two flex columns: panel tops stay aligned (no multicol
    balancing gap), and panels stack from the top filling space within a column. */
 .panels-household,
@@ -494,7 +481,6 @@ html.dark .app-main {
 }
 
 @media (max-width: 980px) {
-  .panels { column-count: 2; }
   .panels-household, .panels-health { flex-direction: column; }
 }
 
@@ -1771,6 +1757,9 @@ html:not(.dark) .academic-select { color-scheme: light; }
 .welcome-gear { font-size: 13px; }
 
 /* ── Help FAB (sits beside the settings gear) ─────────────────────────── */
+/* The help (?) FAB sits beside the Tweaks (⚙) launcher; both are a matched pair
+   of floating glass buttons. They share theme/hue-aware tokens so they adapt to
+   light/dark and the accent hue instead of being pinned to a dark-glass look. */
 .help-fab {
   position: fixed;
   bottom: 20px;
@@ -1778,11 +1767,11 @@ html:not(.dark) .academic-select { color-scheme: light; }
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(22, 22, 30, 0.8);
+  border: 1px solid var(--line);
+  background: var(--panel-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  color: #a78bfa;
+  color: var(--accent);
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
@@ -1790,10 +1779,10 @@ html:not(.dark) .academic-select { color-scheme: light; }
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  transition: color 0.15s ease, border-color 0.15s ease;
+  box-shadow: var(--panel-shadow);
+  transition: border-color 0.15s ease, filter 0.15s ease;
 }
-.help-fab:hover { color: #c4b5fd; border-color: rgba(255, 255, 255, 0.18); }
+.help-fab:hover { border-color: var(--line-2); filter: brightness(1.12); }
 
 /* ── DatePicker ──────────────────────────────────────────────────────────── */
 /* When the .academic-input class is applied to the dp-wrap, suppress the
