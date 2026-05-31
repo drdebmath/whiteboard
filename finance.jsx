@@ -443,6 +443,7 @@ const ReimbursementPanel = memo(function ReimbursementPanel({ items = [], onChan
 /* ─── SavingsPanel ─── */
 
 const SavingsPanel = memo(function SavingsPanel({ items = [], onChange, currency = "₹" }) {
+  const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [target, setTarget] = useState("");
 
@@ -452,6 +453,7 @@ const SavingsPanel = memo(function SavingsPanel({ items = [], onChange, currency
     onChange([...items, { id: uid(), name: n, target: num(target), current: 0, created: Date.now() }]);
     setName("");
     setTarget("");
+    setShowForm(false);
   };
   const update = (id, patch) => onChange(items.map((i) => (i.id === id ? { ...i, ...patch } : i)));
   const remove = (id) => onChange(items.filter((i) => i.id !== id));
@@ -461,26 +463,31 @@ const SavingsPanel = memo(function SavingsPanel({ items = [], onChange, currency
 
   return (
     <div className="panel">
-      <div className="panel-header">Savings Goals</div>
-      <div className="todo-input-row">
-        <input
-          className="todo-input"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && add()}
-          placeholder="e.g. Emergency fund…"
-        />
-        <input
-          className="todo-input money-input"
-          type="number"
-          inputMode="decimal"
-          value={target}
-          onChange={(e) => setTarget(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && add()}
-          placeholder="Target"
-        />
-        <button className="btn-add" aria-label="Add savings goal" onClick={add}>+</button>
+      <div className="panel-header">
+        <span>Savings Goals</span>
+        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
       </div>
+      {showForm && (
+        <div className="todo-input-row">
+          <input
+            className="todo-input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && add()}
+            placeholder="e.g. Emergency fund…"
+          />
+          <input
+            className="todo-input money-input"
+            type="number"
+            inputMode="decimal"
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && add()}
+            placeholder="Target"
+          />
+          <button className="btn-add" aria-label="Add savings goal" onClick={add}>+</button>
+        </div>
+      )}
       {!items.length && <div className="panel-empty">No savings goals yet</div>}
       {items.length > 0 && (
         <div className="fin-summary">

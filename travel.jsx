@@ -354,6 +354,7 @@ const PackingPanel = memo(function PackingPanel({ items = [], trips = [], onChan
 /* ─── WishlistPanel (mirrors ReadingPanel) ─── */
 
 const WishlistPanel = memo(function WishlistPanel({ items = [], onChange }) {
+  const [showForm, setShowForm] = useState(false);
   const [text, setText] = useState("");
   const [note, setNote] = useState("");
 
@@ -363,30 +364,36 @@ const WishlistPanel = memo(function WishlistPanel({ items = [], onChange }) {
     onChange([...items, { id: uid(), text: t, note: note.trim(), visited: false, created: Date.now() }]);
     setText("");
     setNote("");
+    setShowForm(false);
   };
   const toggle = (id) => onChange(items.map((i) => (i.id === id ? { ...i, visited: !i.visited } : i)));
   const remove = (id) => onChange(items.filter((i) => i.id !== id));
 
   return (
     <div className="panel">
-      <div className="panel-header">Travel Wishlist</div>
-      <div className="todo-input-row">
-        <input
-          className="todo-input"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && add()}
-          placeholder="Place…"
-        />
-        <input
-          className="todo-input"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && add()}
-          placeholder="Note (optional)…"
-        />
-        <button className="btn-add" aria-label="Add" onClick={add}>+</button>
+      <div className="panel-header">
+        <span>Travel Wishlist</span>
+        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
       </div>
+      {showForm && (
+        <div className="todo-input-row">
+          <input
+            className="todo-input"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && add()}
+            placeholder="Place…"
+          />
+          <input
+            className="todo-input"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && add()}
+            placeholder="Note (optional)…"
+          />
+          <button className="btn-add" aria-label="Add" onClick={add}>+</button>
+        </div>
+      )}
       {!items.length && <div className="panel-empty">No places yet — dream big</div>}
       <ul className="todo-list">
         {items.map((item) => (
@@ -425,6 +432,7 @@ function expiryInfo(expiry, now) {
 }
 
 const DocumentsPanel = memo(function DocumentsPanel({ items = [], onChange }) {
+  const [showForm, setShowForm] = useState(false);
   const [kind, setKind] = useState(DOC_KINDS[0]);
   const [number, setNumber] = useState("");
   const [label, setLabel] = useState("");
@@ -442,6 +450,7 @@ const DocumentsPanel = memo(function DocumentsPanel({ items = [], onChange }) {
     setNumber("");
     setLabel("");
     setExpiry("");
+    setShowForm(false);
   };
   const remove = (id) => onChange(items.filter((i) => i.id !== id));
 
@@ -450,16 +459,21 @@ const DocumentsPanel = memo(function DocumentsPanel({ items = [], onChange }) {
 
   return (
     <div className="panel">
-      <div className="panel-header">Documents</div>
-      <form className="academic-form" onSubmit={add}>
-        <select className="academic-select" value={kind} onChange={(e) => setKind(e.target.value)}>
-          {DOC_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
-        </select>
-        <input className="academic-input" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Number" />
-        <input className="academic-input sm" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (optional, e.g. Schengen)" />
-        <DatePicker className="academic-input sm" small value={expiry} onChange={setExpiry} placeholder="Expiry date" />
-        <button type="submit" className="academic-submit">Add</button>
-      </form>
+      <div className="panel-header">
+        <span>Documents</span>
+        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+      </div>
+      {showForm && (
+        <form className="academic-form" onSubmit={add}>
+          <select className="academic-select" value={kind} onChange={(e) => setKind(e.target.value)}>
+            {DOC_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
+          </select>
+          <input className="academic-input" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Number" />
+          <input className="academic-input sm" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (optional, e.g. Schengen)" />
+          <DatePicker className="academic-input sm" small value={expiry} onChange={setExpiry} placeholder="Expiry date" />
+          <button type="submit" className="academic-submit">Add</button>
+        </form>
+      )}
       {!items.length && <div className="panel-empty">No documents yet</div>}
       <ul className="todo-list docs-list">
         {sorted.map((d) => {
