@@ -1923,6 +1923,43 @@ html:not(.dark) .academic-select { color-scheme: light; }
   font-weight: 600;
 }
 
+/* time row shown when DatePicker is used with `withTime` */
+.dp-time-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.dp-time-icon { display: inline-flex; color: var(--muted); flex-shrink: 0; }
+.dp-time-select {
+  padding: 5px 7px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.dp-time-select:focus { outline: none; border-color: var(--accent); }
+.dp-time-colon { color: var(--muted); font-weight: 600; }
+.dp-done {
+  margin-left: auto;
+  padding: 5px 12px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dp-done:hover { filter: brightness(1.06); }
+
 /* ── Goals ────────────────────────────────────────────────────────────── */
 .goal-list {
   list-style: none;

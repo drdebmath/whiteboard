@@ -64,11 +64,11 @@ const ReminderPanel = memo(function ReminderPanel({ items, onChange }) {
           onChange={(e) => setText(e.target.value)}
           placeholder="Reminder…"
         />
-        <input
-          type="datetime-local"
-          className="todo-input datetime-input"
+        <DatePicker
+          className="datetime-input"
+          withTime
           value={when}
-          onChange={(e) => setWhen(e.target.value)}
+          onChange={setWhen}
         />
         <button className="btn-add" aria-label="Add" onClick={add}>+</button>
       </div>
@@ -965,29 +965,47 @@ const DAY_NAMES = ["Su","Mo","Tu","We","Th","Fr","Sa"];
 
 function parseDateStr(s) {
   if (!s) return null;
-  const [y, m, d] = s.split("-").map(Number);
-  return { year: y, month: m - 1, day: d };
+  const [datePart, timePart] = String(s).split("T");
+  const [y, m, d] = datePart.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  let hour = 0, minute = 0;
+  if (timePart) {
+    const [hh, mm] = timePart.split(":").map(Number);
+    hour = hh || 0;
+    minute = mm || 0;
+  }
+  return { year: y, month: m - 1, day: d, hour, minute, hasTime: !!timePart };
 }
 
-function DatePicker({ value, onChange, className = "", title, placeholder = "Pick date", small }) {
+// One picker for every date/date-time field in the app. Pass `withTime` to also
+// pick an hour/minute; the value/onChange string then carries a "T HH:mm" suffix
+// (matching the old native datetime-local format), otherwise it's "YYYY-MM-DD".
+function DatePicker({ value, onChange, className = "", title, placeholder, withTime = false, small }) {
+  placeholder = placeholder ?? (withTime ? "Pick date & time" : "Pick date");
   const parsed = parseDateStr(value);
   const today = new Date();
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState(null);
   const [viewYear, setViewYear]   = useState(parsed?.year  ?? today.getFullYear());
   const [viewMonth, setViewMonth] = useState(parsed?.month ?? today.getMonth());
+  const [hour, setHour]     = useState(parsed?.hour   ?? 9);
+  const [minute, setMinute] = useState(parsed?.minute ?? 0);
   const wrapRef = useRef(null);
   const popRef = useRef(null);
 
   // Keep view in sync when value changes externally
   useEffect(() => {
-    if (parsed) { setViewYear(parsed.year); setViewMonth(parsed.month); }
+    if (parsed) {
+      setViewYear(parsed.year);
+      setViewMonth(parsed.month);
+      if (withTime) { setHour(parsed.hour); setMinute(parsed.minute); }
+    }
   }, [value]);
 
   // The popover is portaled to <body> (so it escapes every panel's stacking
   // context and overflow), then positioned with fixed coords from the trigger.
   // Flip above the trigger if it would overflow the bottom of the viewport.
-  const POP_W = 240, POP_H = 290;
+  const POP_W = 240, POP_H = withTime ? 340 : 290;
   function place() {
     const el = wrapRef.current;
     if (!el) return;
@@ -1039,11 +1057,28 @@ function DatePicker({ value, onChange, className = "", title, placeholder = "Pic
     if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
     else setViewMonth(m => m + 1);
   }
-  function selectDay(day) {
-    const mm = String(viewMonth + 1).padStart(2, "0");
+  function emit(year, month, day, h, m) {
+    const mm = String(month + 1).padStart(2, "0");
     const dd = String(day).padStart(2, "0");
-    onChange(`${viewYear}-${mm}-${dd}`);
-    setOpen(false);
+    if (withTime) {
+      const hh = String(h).padStart(2, "0");
+      const mi = String(m).padStart(2, "0");
+      onChange(`${year}-${mm}-${dd}T${hh}:${mi}`);
+    } else {
+      onChange(`${year}-${mm}-${dd}`);
+    }
+  }
+  function selectDay(day) {
+    emit(viewYear, viewMonth, day, hour, minute);
+    // With a time field, keep the popover open so the time can still be tweaked.
+    if (!withTime) setOpen(false);
+  }
+  function changeTime(h, m) {
+    setHour(h);
+    setMinute(m);
+    // Re-emit against the chosen day (or today, if none picked yet).
+    const base = parsed || { year: today.getFullYear(), month: today.getMonth(), day: today.getDate() };
+    emit(base.year, base.month, base.day, h, m);
   }
   function clearDate(e) {
     e.stopPropagation();
@@ -1061,10 +1096,14 @@ function DatePicker({ value, onChange, className = "", title, placeholder = "Pic
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   const displayText = parsed
-    ? `${MONTH_NAMES[parsed.month].slice(0,3)} ${parsed.day}, ${parsed.year}`
+    ? withTime
+      ? `${MONTH_NAMES[parsed.month].slice(0,3)} ${parsed.day}, ${parsed.year} · ${String(parsed.hour).padStart(2,"0")}:${String(parsed.minute).padStart(2,"0")}`
+      : `${MONTH_NAMES[parsed.month].slice(0,3)} ${parsed.day}, ${parsed.year}`
     : "";
 
-  const selectedKey = value || "";
+  const selectedKey = parsed
+    ? `${parsed.year}-${String(parsed.month+1).padStart(2,"0")}-${String(parsed.day).padStart(2,"0")}`
+    : "";
   const viewKey = (d) => `${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
 
   return (
@@ -1117,6 +1156,28 @@ function DatePicker({ value, onChange, className = "", title, placeholder = "Pic
               );
             })}
           </div>
+          {withTime && (
+            <div className="dp-time-row">
+              <span className="dp-time-icon" aria-hidden>
+                <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
+                  <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.2"/>
+                  <path d="M6 3.2V6l1.8 1.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </span>
+              <select className="dp-time-select" value={hour} onChange={(e) => changeTime(Number(e.target.value), minute)}>
+                {Array.from({ length: 24 }, (_, h) => (
+                  <option key={h} value={h}>{String(h).padStart(2, "0")}</option>
+                ))}
+              </select>
+              <span className="dp-time-colon">:</span>
+              <select className="dp-time-select" value={minute} onChange={(e) => changeTime(hour, Number(e.target.value))}>
+                {Array.from({ length: 60 }, (_, m) => (
+                  <option key={m} value={m}>{String(m).padStart(2, "0")}</option>
+                ))}
+              </select>
+              <button type="button" className="dp-done" onClick={() => setOpen(false)}>Done</button>
+            </div>
+          )}
         </div>,
         document.body
       )}
