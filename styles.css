@@ -517,8 +517,17 @@ html.dark .app-main {
   box-shadow: var(--panel-shadow-hover);
   border-color: color-mix(in oklch, var(--tab-tint, transparent) 22%, var(--line-2));
 }
-/* Projects reads as the academic anchor: a touch more lift. */
-.panels-academic > .panel:nth-child(5) {
+/* One anchor per tab: the heaviest panel gets a touch more lift so every tab
+   has a single visual entry point rather than reading as N equal cards
+   (see DESIGN.md §5). Academic → Projects; Research → Projects (full-width
+   first child); the flex-column tabs → the first panel of their left column
+   (Chores / Habits / Grants / Trips). */
+.panels-academic > .panel:nth-child(5),
+.panels-research > .panel:first-child,
+.panels-finance  > .panels-col:first-child > .panel:first-child,
+.panels-household > .panels-col:first-child > .panel:first-child,
+.panels-health   > .panels-col:first-child > .panel:first-child,
+.panels-travel   > .panels-col:first-child > .panel:first-child {
   box-shadow: var(--panel-shadow-raised);
 }
 .panel-header {
@@ -731,16 +740,38 @@ html:not(.dark) .datetime-input { color-scheme: light; }
 .reimb-item:hover .btn-edit,
 .service-card:hover .btn-edit { opacity: 1; }
 
-/* ── Reminders ────────────────────────────────────────────────────────── */
-.reminder-time {
+/* ── Meta-when ────────────────────────────────────────────────────────── */
+/* The trailing "Mon 5 · 2d" date stamp shared by every dated row. One base
+   definition for eight historical class names (…-due / -time / -expiry / -range);
+   urgency is driven by the .overdue/.soon class the row already carries
+   (overdue→danger, soon→accent). New dated panels should reuse these hooks
+   rather than coin a ninth name. See DESIGN.md §3 "meta-when". */
+.reminder-time,
+.deadline-due,
+.service-due,
+.grant-due,
+.bill-due,
+.reimb-due,
+.doc-expiry,
+.trip-range {
   flex-shrink: 0;
   font-size: 11.5px;
   color: var(--muted);
-  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
-.reminder-item.overdue .reminder-time { color: var(--danger); }
-.reminder-item.soon .reminder-time { color: var(--accent); }
+.reminder-item.overdue .reminder-time,
+.grant-card.overdue .grant-due,
+.bill-item.overdue .bill-due,
+.reimb-item.overdue .reimb-due,
+.doc-item.overdue .doc-expiry { color: var(--danger); }
+.reminder-item.soon .reminder-time,
+.grant-card.soon .grant-due,
+.bill-item.soon .bill-due,
+.reimb-item.soon .reimb-due,
+.doc-item.soon .doc-expiry { color: var(--accent); }
+
+/* ── Reminders ────────────────────────────────────────────────────────── */
 .reminder-item.overdue { background: var(--danger-soft); }
 
 /* ── Auto-textarea ────────────────────────────────────────────────────── */
@@ -1258,13 +1289,6 @@ html:not(.dark) .academic-select { color-scheme: light; }
   color: var(--muted);
 }
 .deadline-title { flex: 1; min-width: 0; font-size: 13.5px; color: var(--ink); overflow-wrap: break-word; }
-.deadline-due {
-  flex-shrink: 0;
-  font-size: 11px;
-  color: var(--muted);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
 .deadline-row .btn-delete { opacity: 0.5; }
 .deadline-row:hover .btn-delete { opacity: 1; }
 
@@ -1289,12 +1313,6 @@ html:not(.dark) .academic-select { color-scheme: light; }
    date as a muted footer. Actions hug the right edge and reveal on hover. */
 .service-card-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .service-card-actions { margin-left: auto; display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
-.service-due {
-  font-size: 11px;
-  color: var(--muted);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
 .service-card .service-title {
   font-size: 13.5px;
   line-height: 1.4;
@@ -2056,9 +2074,6 @@ html:not(.dark) .academic-select { color-scheme: light; }
 .grant-list { display: flex; flex-direction: column; gap: 9px; }
 .grant-title { flex: 1; min-width: 0; }
 .grant-remaining { flex-shrink: 0; font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.grant-due { flex-shrink: 0; font-size: 11.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.grant-card.overdue .grant-due { color: var(--danger); }
-.grant-card.soon .grant-due { color: var(--accent); }
 .grant-details { display: flex; flex-direction: column; gap: 12px; }
 .grant-fields { display: flex; flex-wrap: wrap; gap: 10px; }
 .grant-fields label { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; color: var(--muted); }
@@ -2184,10 +2199,7 @@ html:not(.dark) .academic-select { color-scheme: light; }
 .bill-item:hover { background: var(--surface-2); }
 .bill-name { flex: 1 1 auto; min-width: 9ch; font-size: 14px; color: var(--ink); overflow-wrap: break-word; }
 .bill-amount { flex-shrink: 0; font-size: 13px; color: var(--ink-2); }
-.bill-due { flex-shrink: 0; font-size: 11.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .bill-item.overdue { background: var(--danger-soft); }
-.bill-item.overdue .bill-due { color: var(--danger); }
-.bill-item.soon .bill-due { color: var(--accent); }
 .bill-item .btn-delete { opacity: 0; }
 .bill-item:hover .btn-delete { opacity: 1; }
 
@@ -2221,9 +2233,6 @@ html:not(.dark) .academic-select { color-scheme: light; }
 .reimb-status-btn:hover { filter: brightness(1.08); }
 .reimb-title { flex: 1 1 auto; min-width: 11ch; font-size: 14px; color: var(--ink); overflow-wrap: break-word; }
 .reimb-party { color: var(--muted); font-size: 12px; }
-.reimb-due { flex-shrink: 0; font-size: 11.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.reimb-item.overdue .reimb-due { color: var(--danger); }
-.reimb-item.soon .reimb-due { color: var(--accent); }
 .reimb-amount { flex-shrink: 0; font-size: 13px; color: var(--ink-2); }
 .reimb-item.status-received { opacity: 0.6; }
 .reimb-item.status-received .reimb-title { text-decoration: line-through; color: var(--muted); }
@@ -2301,7 +2310,6 @@ html:not(.dark) .academic-select { color-scheme: light; }
 .trips-list { display: flex; flex-direction: column; gap: 9px; }
 .trip-card .project-title-row { display: flex; align-items: center; gap: 8px; padding: 9px 11px; }
 .trip-dest { flex: 1; min-width: 0; }
-.trip-range { flex-shrink: 0; font-size: 11.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .trip-booked-count {
   flex-shrink: 0;
   font-size: 10.5px;
@@ -2350,10 +2358,7 @@ html:not(.dark) .academic-select { color-scheme: light; }
 .doc-item:hover { background: var(--surface-2); }
 .doc-name { flex: 1 1 auto; min-width: 9ch; font-size: 14px; color: var(--ink); overflow-wrap: break-word; }
 .doc-number { flex-shrink: 0; font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); }
-.doc-expiry { flex-shrink: 0; font-size: 11.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .doc-item.overdue { background: var(--danger-soft); }
-.doc-item.overdue .doc-expiry { color: var(--danger); }
-.doc-item.soon .doc-expiry { color: var(--accent); }
 .doc-item .btn-delete { opacity: 0; }
 .doc-item:hover .btn-delete { opacity: 1; }
 

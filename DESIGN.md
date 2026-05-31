@@ -91,11 +91,12 @@ them.
   marks + reveal-on-hover actions; expanded reveals a detail body with
   `.project-section` field groups. Projects, grants, advisees, and trips all share
   this exact shell. New "object with details" entities should too.
-- **Meta-when** — the trailing "Mon 5 · 2d" date stamp on a row. Today this is
-  re-implemented under eight class names (`deadline-due`, `grant-due`, `bill-due`,
-  `reimb-due`, `doc-expiry`, `service-due`, `reminder-time`, `trip-range`) with
-  identical rules. **Treat it as one pattern**: muted, 11–11.5px, `tabular-nums`,
-  `nowrap`, `flex-shrink:0`; overdue→danger, soon→accent.
+- **Meta-when** — the trailing "Mon 5 · 2d" date stamp on a row: muted, 11.5px,
+  `tabular-nums`, `nowrap`, `flex-shrink:0`; overdue→danger, soon→accent. The eight
+  historical class names (`deadline-due`, `grant-due`, `bill-due`, `reimb-due`,
+  `doc-expiry`, `service-due`, `reminder-time`, `trip-range`) now share **one base
+  definition + two urgency groups** (the "Meta-when" block in `styles.css`). New
+  dated panels reuse these hooks rather than coin a ninth.
 - **Reveal-on-hover affordance** — destructive/secondary controls (`.btn-delete`,
   `.btn-edit`) sit at `opacity:0` (or 0.5 on dense rows) and surface on row hover.
   The resting row stays quiet; tools appear when you reach for them.
@@ -142,10 +143,11 @@ Buttons that trigger the doorway are also unified: the pill `+ Add`
 - **Right-hand column = aspiration.** `GoalsPanel` sits top-right on finance,
   travel, research, household, health. Goals are the forward-looking "why";
   keeping them in a consistent corner is part of the language.
-- **One anchor per tab.** Give the heaviest, highest-worth panel slightly more
-  lift (`--panel-shadow-raised`, as Projects has) so the eye has an entry point.
-  A tab of N equal-weight panels has no entry point — that reads as clutter even
-  when nothing is wrong.
+- **One anchor per tab.** The heaviest, highest-worth panel gets slightly more
+  lift (`--panel-shadow-raised`) so the eye has an entry point: Academic →
+  Projects, Research → Projects, Household → Chores, Health → Habits, Finance →
+  Grants, Travel → Trips. A tab of N equal-weight panels has no entry point — that
+  reads as clutter even when nothing is wrong.
 
 ---
 
