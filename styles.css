@@ -1163,12 +1163,8 @@ html.dark .chore-due .chore-status-badge { color: oklch(0.78 0.12 78); }
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  padding: 8px 30px 8px 10px;
+  padding: 8px 10px;
   background-color: var(--surface-2);
-  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 10px;
   border: 1px solid var(--line);
   border-radius: 6px;
   font-size: 13px;
@@ -1177,6 +1173,14 @@ html.dark .chore-due .chore-status-badge { color: oklch(0.78 0.12 78); }
   cursor: pointer;
   transition: border-color 0.15s ease;
   color-scheme: dark;
+}
+/* Only the <select> carries the dropdown chevron. */
+.academic-select {
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px;
 }
 html:not(.dark) .academic-input,
 html:not(.dark) .academic-select { color-scheme: light; }
