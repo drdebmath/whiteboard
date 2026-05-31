@@ -1,4 +1,4 @@
-const { useState, useRef, useLayoutEffect, memo } = React;
+const { useState, useRef, useLayoutEffect, useEffect, memo } = React;
 const { uid, dateKey, todayKey, daysBetweenKeys, MS, safeHref } = window.MyBoardStore;
 
 /* ─── Chip — a small colored type/category tag, shared across every tab ─── */
@@ -954,6 +954,137 @@ const GoalsPanel = memo(function GoalsPanel({ items = [], onChange, placeholder 
   );
 });
 
+/* ─── DatePicker ─────────────────────────────────────────────────────────── */
+//
+// Replaces native <input type="date"> with a styled floating calendar card.
+// `value` is a "YYYY-MM-DD" string; `onChange` receives the same format.
+
+const MONTH_NAMES = ["January","February","March","April","May","June",
+  "July","August","September","October","November","December"];
+const DAY_NAMES = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+
+function parseDateStr(s) {
+  if (!s) return null;
+  const [y, m, d] = s.split("-").map(Number);
+  return { year: y, month: m - 1, day: d };
+}
+
+function DatePicker({ value, onChange, className = "", title, placeholder = "Pick date", small }) {
+  const parsed = parseDateStr(value);
+  const today = new Date();
+  const [open, setOpen] = useState(false);
+  const [viewYear, setViewYear]   = useState(parsed?.year  ?? today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(parsed?.month ?? today.getMonth());
+  const wrapRef = useRef(null);
+
+  // Keep view in sync when value changes externally
+  useEffect(() => {
+    if (parsed) { setViewYear(parsed.year); setViewMonth(parsed.month); }
+  }, [value]);
+
+  // Close on outside click or Escape
+  useEffect(() => {
+    if (!open) return;
+    function handler(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    }
+    function esc(e) { if (e.key === "Escape") setOpen(false); }
+    document.addEventListener("pointerdown", handler);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("pointerdown", handler);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
+    else setViewMonth(m => m - 1);
+  }
+  function nextMonth() {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
+    else setViewMonth(m => m + 1);
+  }
+  function selectDay(day) {
+    const mm = String(viewMonth + 1).padStart(2, "0");
+    const dd = String(day).padStart(2, "0");
+    onChange(`${viewYear}-${mm}-${dd}`);
+    setOpen(false);
+  }
+  function clearDate(e) {
+    e.stopPropagation();
+    onChange("");
+    setOpen(false);
+  }
+
+  // Build the day grid for current view month
+  const firstDow = new Date(viewYear, viewMonth, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const todayKey_ = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+
+  const cells = [];
+  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  const displayText = parsed
+    ? `${MONTH_NAMES[parsed.month].slice(0,3)} ${parsed.day}, ${parsed.year}`
+    : "";
+
+  const selectedKey = value || "";
+  const viewKey = (d) => `${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+
+  return (
+    <div ref={wrapRef} className={`dp-wrap ${small ? "dp-small" : ""} ${className}`} title={title}>
+      <button
+        type="button"
+        className={`dp-trigger ${open ? "dp-trigger--open" : ""} ${!value ? "dp-trigger--empty" : ""}`}
+        onClick={() => setOpen(o => !o)}
+      >
+        <span className="dp-icon">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <rect x="1" y="2" width="10" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.2"/>
+            <path d="M1 5h10" stroke="currentColor" strokeWidth="1.2"/>
+            <path d="M4 1v2M8 1v2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+          </svg>
+        </span>
+        <span className="dp-value">{displayText || placeholder}</span>
+        {value && (
+          <span className="dp-clear" onPointerDown={clearDate} title="Clear date">×</span>
+        )}
+      </button>
+
+      {open && (
+        <div className="dp-popover">
+          <div className="dp-header">
+            <button type="button" className="dp-nav" onClick={prevMonth}>‹</button>
+            <span className="dp-month-label">{MONTH_NAMES[viewMonth]} {viewYear}</span>
+            <button type="button" className="dp-nav" onClick={nextMonth}>›</button>
+          </div>
+          <div className="dp-grid">
+            {DAY_NAMES.map(n => <div key={n} className="dp-dayname">{n}</div>)}
+            {cells.map((d, i) => {
+              if (!d) return <div key={`e${i}`} />;
+              const key = viewKey(d);
+              const isToday = key === todayKey_;
+              const isSel   = key === selectedKey;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className={`dp-day ${isToday ? "dp-day--today" : ""} ${isSel ? "dp-day--selected" : ""}`}
+                  onClick={() => selectDay(d)}
+                >
+                  {d}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── exports to window ─── */
 
 Object.assign(window, {
@@ -970,4 +1101,5 @@ Object.assign(window, {
   EditButton,
   formatWhen,
   relTime,
+  DatePicker,
 });

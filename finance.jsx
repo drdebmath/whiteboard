@@ -118,12 +118,7 @@ const GrantCard = memo(function GrantCard({ grant, isOpen, onToggle, onUpdate, o
               <MoneyInput value={grant.advance} onCommit={(v) => onUpdate({ advance: v })} className="grant-input" />
             </label>
             <label>End date
-              <input
-                className="academic-input sm"
-                type="date"
-                value={grant.expiry ? new Date(grant.expiry).toISOString().slice(0, 10) : ""}
-                onChange={(e) => onUpdate({ expiry: e.target.value ? new Date(e.target.value).getTime() : null })}
-              />
+              <DatePicker className="academic-input sm" small value={grant.expiry ? new Date(grant.expiry).toISOString().slice(0, 10) : ""} onChange={(v) => onUpdate({ expiry: v ? new Date(v).getTime() : null })} />
             </label>
           </div>
           <div className="grant-summary">
@@ -241,7 +236,7 @@ const GrantPanel = memo(function GrantPanel({ items = [], onChange, currency = "
           <input className="academic-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Grant name / agency" />
           <input className="academic-input sm" type="number" inputMode="decimal" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="Total" />
           <input className="academic-input sm" type="number" inputMode="decimal" value={advance} onChange={(e) => setAdvance(e.target.value)} placeholder="Advance" />
-          <input className="academic-input sm" type="date" value={expiry} onChange={(e) => setExpiry(e.target.value)} title="End date" />
+          <DatePicker className="academic-input sm" small value={expiry} onChange={setExpiry} title="End date" />
           <button type="submit" className="academic-submit">Add</button>
         </form>
       )}
@@ -315,7 +310,7 @@ const BillsPanel = memo(function BillsPanel({ items = [], onChange, currency = "
         <select className="academic-select" value={cadence} onChange={(e) => setCadence(e.target.value)}>
           {BILL_CADENCES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
-        <input className="academic-input sm" type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+        <DatePicker className="academic-input sm" small value={due} onChange={setDue} />
         <button type="submit" className="academic-submit">Add</button>
       </form>
       {!items.length && <div className="panel-empty">No bills yet</div>}
@@ -389,7 +384,7 @@ const ReimbursementPanel = memo(function ReimbursementPanel({ items = [], onChan
         <input className="academic-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What forâ€¦" />
         <input className="academic-input sm" type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
         <input className="academic-input sm" value={party} onChange={(e) => setParty(e.target.value)} placeholder="From" />
-        <input className="academic-input sm" type="date" value={due} onChange={(e) => setDue(e.target.value)} title="Due date" />
+        <DatePicker className="academic-input sm" small value={due} onChange={setDue} title="Due date" />
         <button type="submit" className="academic-submit">Add</button>
       </form>
       {!items.length && <div className="panel-empty">No claims yet</div>}
@@ -559,7 +554,7 @@ const LoanPanel = memo(function LoanPanel({ items = [], onChange, currency = "â‚
           <input className="academic-input sm" type="number" inputMode="decimal" value={outstanding} onChange={(e) => setOutstanding(e.target.value)} placeholder="Outstanding" />
           <input className="academic-input sm" type="number" inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="Rate %" />
           <input className="academic-input sm" type="number" inputMode="decimal" value={emi} onChange={(e) => setEmi(e.target.value)} placeholder="EMI" />
-          <input className="academic-input sm" type="date" value={due} onChange={(e) => setDue(e.target.value)} title="Next payment" />
+          <DatePicker className="academic-input sm" small value={due} onChange={setDue} title="Next payment" />
           <button type="submit" className="academic-submit">Add</button>
         </form>
       )}

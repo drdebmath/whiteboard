@@ -141,12 +141,7 @@ const DeadlinesPanel = memo(function DeadlinesPanel({ items = [], onChange }) {
             onChange={(e) => setFormTitle(e.target.value)}
             placeholder="Title"
           />
-          <input
-            type="date"
-            className="academic-input"
-            value={formDate}
-            onChange={(e) => setFormDate(e.target.value)}
-          />
+          <DatePicker className="academic-input" value={formDate} onChange={setFormDate} />
           <button type="submit" className="academic-submit">Add</button>
         </form>
       )}
@@ -170,7 +165,7 @@ const DeadlinesPanel = memo(function DeadlinesPanel({ items = [], onChange }) {
                         {DEADLINE_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
                       </select>
                       <input className="academic-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-                      <input type="date" className="academic-input" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+                      <DatePicker className="academic-input" value={editDate} onChange={setEditDate} />
                       <button className="panel-text-btn" onClick={() => saveEdit(item.id)}>Save</button>
                       <button className="panel-text-btn" onClick={() => setEditingId(null)}>Cancel</button>
                     </>
@@ -444,12 +439,7 @@ const ServicePanel = memo(function ServicePanel({ items = [], onChange }) {
             onChange={(e) => setFormTitle(e.target.value)}
             placeholder="Description"
           />
-          <input
-            type="date"
-            className="academic-input"
-            value={formDate}
-            onChange={(e) => setFormDate(e.target.value)}
-          />
+          <DatePicker className="academic-input" value={formDate} onChange={setFormDate} />
           <button type="submit" className="academic-submit">Add</button>
         </form>
       )}
@@ -481,7 +471,7 @@ const ServicePanel = memo(function ServicePanel({ items = [], onChange }) {
                             {SERVICE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                           </select>
                           <input className="academic-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-                          <input type="date" className="academic-input" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+                          <DatePicker className="academic-input" value={editDate} onChange={setEditDate} />
                           <div className="service-card-edit-actions">
                             <button className="panel-text-btn" onClick={() => saveEdit(item.id)}>Save</button>
                             <button className="panel-text-btn" onClick={() => setEditingId(null)}>Cancel</button>
