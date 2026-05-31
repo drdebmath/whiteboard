@@ -1,4 +1,4 @@
-// app.jsx — Main App component for MyBoard personal dashboard
+// app.jsx — Main App component for Whiteboard personal dashboard
 // Must be the LAST script loaded. No imports/exports — plain script tag.
 
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
@@ -9,7 +9,7 @@ const {
   fetchRemote, createRemote, pushRemote, debounce,
   normalizeState,
   MS,
-} = window.MyBoardStore;
+} = window.WhiteboardStore;
 
 // Returns true if `a` and `b` differ only in string-valued leaves (i.e. a pure
 // text edit). Structural changes — array length, booleans, numbers — return
@@ -189,14 +189,14 @@ function computeStats(state, now) {
 function SetupModal({ initialConfig, onClose, onDone, onDisconnect }) {
   const [token, setToken] = useState(initialConfig?.token || "");
   const [gistId, setGistId] = useState(initialConfig?.gistId || "");
-  const [filename, setFilename] = useState(initialConfig?.filename || "myboard.json");
+  const [filename, setFilename] = useState(initialConfig?.filename || "whiteboard.json");
   const [error, setError] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!token.trim()) { setError("Token is required"); return; }
     setError("");
-    onDone({ token: token.trim(), gistId: gistId.trim(), filename: filename.trim() || "myboard.json" });
+    onDone({ token: token.trim(), gistId: gistId.trim(), filename: filename.trim() || "whiteboard.json" });
   };
 
   return (
@@ -267,7 +267,7 @@ function SetupModal({ initialConfig, onClose, onDone, onDisconnect }) {
             <input
               value={filename}
               onChange={(e) => setFilename(e.target.value)}
-              placeholder="myboard.json"
+              placeholder="whiteboard.json"
               className="modal-input"
             />
           </div>
@@ -301,7 +301,7 @@ function NameModal({ onClose, onDone }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">Welcome to MyBoard</div>
+        <div className="modal-header">Welcome to Whiteboard</div>
         <form onSubmit={handleSubmit}>
           <div className="modal-field">
             <label>What should we call you?</label>
@@ -335,11 +335,11 @@ function WelcomeModal({ firstRun, onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-welcome" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          {firstRun ? "Welcome to MyBoard" : "About MyBoard"}
+          {firstRun ? "Welcome to Whiteboard" : "About Whiteboard"}
         </div>
 
         <p className="welcome-lede">
-          MyBoard is your private, local-first dashboard for the things you’re
+          Whiteboard is your private, local-first dashboard for the things you’re
           keeping track of — work, home, health, money and travel — all in one
           place. Everything lives in this browser; nothing is sent anywhere
           unless you turn on sync.
@@ -400,7 +400,7 @@ const CATEGORY_BLURBS = {
 // ─── useTweaks defaults ───
 
 const TWEAK_DEFAULTS = {
-  __key: "myboard",
+  __key: "whiteboard",
   density: "default",
   darkMode: false,
   autoTheme: true,
@@ -757,7 +757,7 @@ function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `myboard-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `whiteboard-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }, [state]);
@@ -775,7 +775,7 @@ function App() {
         if (normalized) {
           safeUpdate(normalized);
         } else {
-          alert("Invalid MyBoard data format");
+          alert("Invalid Whiteboard data format");
         }
       } catch {
         alert("Failed to parse file");
@@ -842,7 +842,7 @@ function App() {
   }, [state, syncConfig]);
 
   const handleDisconnectSync = useCallback(() => {
-    const emptyConfig = { token: "", gistId: "", filename: "myboard.json" };
+    const emptyConfig = { token: "", gistId: "", filename: "whiteboard.json" };
     setSyncConfigState(emptyConfig);
     setSyncConfig(emptyConfig);
     hasLoadedRemoteRef.current = false;
@@ -1258,8 +1258,8 @@ function App() {
       <button
         className="help-fab"
         onClick={() => setShowHelp(true)}
-        title="What is MyBoard? (help)"
-        aria-label="Open the MyBoard guide"
+        title="What is Whiteboard? (help)"
+        aria-label="Open the Whiteboard guide"
       >
         ?
       </button>

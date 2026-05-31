@@ -1,4 +1,4 @@
-# MyBoard
+# Whiteboard
 
 A local-first personal dashboard for academic tasks, household lists, health habits, reminders, and optional private GitHub Gist sync.
 

@@ -1,5 +1,5 @@
 const { useState, memo } = React;
-const { uid, MS } = window.MyBoardStore;
+const { uid, MS } = window.WhiteboardStore;
 const { formatWhen, Chip, EditButton } = window;
 
 // formatWhen() returns { label, rel, overdue, soon }; build a printable string.

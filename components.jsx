@@ -1,5 +1,5 @@
 const { useState, useRef, useLayoutEffect, useEffect, memo } = React;
-const { uid, dateKey, todayKey, daysBetweenKeys, MS, safeHref } = window.MyBoardStore;
+const { uid, dateKey, todayKey, daysBetweenKeys, MS, safeHref } = window.WhiteboardStore;
 
 /* ─── Chip — a small colored type/category tag, shared across every tab ─── */
 

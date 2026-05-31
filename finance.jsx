@@ -1,9 +1,9 @@
-// finance.jsx — Finance tab panels for MyBoard.
+// finance.jsx — Finance tab panels for Whiteboard.
 // Loaded after academic.jsx, before app.jsx. No imports/exports — globals on window.
 // Panels follow the { items, onChange, currency } contract.
 
 const { useState, useEffect, useRef, memo } = React;
-const { uid, num, formatMoney } = window.MyBoardStore;
+const { uid, num, formatMoney } = window.WhiteboardStore;
 const { formatWhen, Chip } = window;
 
 /* ─── shared bits ─── */

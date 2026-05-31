@@ -3,12 +3,12 @@
 // household (chores, reminders, shopping), health (habits, reminders).
 // Gist sync stores the board as a single JSON file in a private GitHub Gist.
 
-const STORAGE_KEY = "myboard.v1";
-const PROFILE_NAME_KEY = "myboard.profileName";
-const SYNC_CONFIG_KEY = "myboard.gistSync";
-const LEGACY_SYNC_URL_KEY = "myboard.syncUrl";
-const INTRO_SEEN_KEY = "myboard.introSeen";
-const DEFAULT_GIST_FILENAME = "myboard.json";
+const STORAGE_KEY = "whiteboard.v1";
+const PROFILE_NAME_KEY = "whiteboard.profileName";
+const SYNC_CONFIG_KEY = "whiteboard.gistSync";
+const LEGACY_SYNC_URL_KEY = "whiteboard.syncUrl";
+const INTRO_SEEN_KEY = "whiteboard.introSeen";
+const DEFAULT_GIST_FILENAME = "whiteboard.json";
 
 // Time constants (ms). Shared by components.jsx, academic.jsx and app.jsx.
 const MS = {
@@ -403,7 +403,7 @@ function loadLocal() {
     if (!raw) return structuredClone(SEED_STATE);
     return normalizeState(JSON.parse(raw)) || structuredClone(SEED_STATE);
   } catch (e) {
-    console.warn("MyBoard: failed to load state", e);
+    console.warn("Whiteboard: failed to load state", e);
     return structuredClone(SEED_STATE);
   }
 }
@@ -413,7 +413,7 @@ function saveLocal(state) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     return true;
   } catch (e) {
-    console.warn("MyBoard: failed to save state", e);
+    console.warn("Whiteboard: failed to save state", e);
     return false;
   }
 }
@@ -448,7 +448,7 @@ function getSyncConfig() {
       ...JSON.parse(raw),
     };
   } catch (e) {
-    console.warn("MyBoard: failed to load sync config", e);
+    console.warn("Whiteboard: failed to load sync config", e);
     return { token: "", gistId: "", filename: DEFAULT_GIST_FILENAME };
   }
 }
@@ -499,7 +499,7 @@ function parseGistState(gist, filename) {
     const raw = parsed.state || parsed;
     return normalizeState(raw);
   } catch (e) {
-    console.warn("MyBoard: invalid gist JSON", e);
+    console.warn("Whiteboard: invalid gist JSON", e);
     return null;
   }
 }
@@ -517,7 +517,7 @@ async function createRemote(state, config) {
     method: "POST",
     headers: gistHeaders(config.token),
     body: JSON.stringify({
-      description: "MyBoard sync data",
+      description: "Whiteboard sync data",
       public: false,
       files: {
         [filename]: { content: JSON.stringify(state, null, 2) },
@@ -556,7 +556,7 @@ function debounce(fn, ms) {
   };
 }
 
-window.MyBoardStore = {
+window.WhiteboardStore = {
   loadLocal,
   saveLocal,
   normalizeState,

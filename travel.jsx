@@ -1,9 +1,9 @@
-// travel.jsx — Travel tab panels for MyBoard.
+// travel.jsx — Travel tab panels for Whiteboard.
 // Loaded after finance.jsx, before app.jsx. No imports/exports — globals on window.
 // Panels follow the { items, onChange } contract; TripAlerts is rendered above the grid.
 
 const { useState, memo } = React;
-const { uid, MS, safeHref } = window.MyBoardStore;
+const { uid, MS, safeHref } = window.WhiteboardStore;
 const { formatWhen, relTime, AutoTextarea, Chip, TaskList } = window;
 
 /* ─── shared bits ─── */
