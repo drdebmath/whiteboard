@@ -125,7 +125,7 @@ const DeadlinesPanel = memo(function DeadlinesPanel({ items = [], onChange }) {
             onChange={(e) => setFormTitle(e.target.value)}
             placeholder="Title"
           />
-          <DatePicker className="academic-input" value={formDate} onChange={setFormDate} />
+          <DatePicker className="academic-input" value={formDate} onChange={setFormDate} placeholder="Due date" />
           <button type="submit" className="academic-submit">Add</button>
         </form>
       )}
@@ -149,7 +149,7 @@ const DeadlinesPanel = memo(function DeadlinesPanel({ items = [], onChange }) {
                         {DEADLINE_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
                       </select>
                       <input className="academic-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-                      <DatePicker className="academic-input" value={editDate} onChange={setEditDate} />
+                      <DatePicker className="academic-input" value={editDate} onChange={setEditDate} placeholder="Due date" />
                       <button className="panel-text-btn" onClick={() => saveEdit(item.id)}>Save</button>
                       <button className="panel-text-btn" onClick={() => setEditingId(null)}>Cancel</button>
                     </>
@@ -423,7 +423,7 @@ const ServicePanel = memo(function ServicePanel({ items = [], onChange }) {
             onChange={(e) => setFormTitle(e.target.value)}
             placeholder="Description"
           />
-          <DatePicker className="academic-input" value={formDate} onChange={setFormDate} />
+          <DatePicker className="academic-input" value={formDate} onChange={setFormDate} placeholder="Due date" />
           <button type="submit" className="academic-submit">Add</button>
         </form>
       )}
@@ -445,7 +445,7 @@ const ServicePanel = memo(function ServicePanel({ items = [], onChange }) {
                     {SERVICE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
                   <input className="academic-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-                  <DatePicker className="academic-input" value={editDate} onChange={setEditDate} />
+                  <DatePicker className="academic-input" value={editDate} onChange={setEditDate} placeholder="Due date" />
                   <div className="service-card-edit-actions">
                     <button className="panel-text-btn" onClick={() => saveEdit(item.id)}>Save</button>
                     <button className="panel-text-btn" onClick={() => setEditingId(null)}>Cancel</button>

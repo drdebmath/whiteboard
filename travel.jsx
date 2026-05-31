@@ -148,9 +148,9 @@ const TripCard = memo(function TripCard({ trip, isOpen, onToggle, onUpdate, onRe
           <div className="project-section">
             <label>Dates</label>
             <div className="trip-date-row">
-              <DatePicker className="academic-input" value={trip.start || ""} onChange={(v) => onUpdate({ start: v })} />
+              <DatePicker className="academic-input" value={trip.start || ""} onChange={(v) => onUpdate({ start: v })} placeholder="Start date" />
               <span className="trip-date-sep">→</span>
-              <DatePicker className="academic-input" value={trip.end || ""} onChange={(v) => onUpdate({ end: v })} />
+              <DatePicker className="academic-input" value={trip.end || ""} onChange={(v) => onUpdate({ end: v })} placeholder="End date" />
             </div>
           </div>
           <div className="project-section">
@@ -244,8 +244,8 @@ const TripsPanel = memo(function TripsPanel({ items = [], onChange }) {
       {showForm && (
         <form className="academic-form" onSubmit={addTrip}>
           <input className="academic-input" value={dest} onChange={(e) => setDest(e.target.value)} placeholder="Destination" />
-          <DatePicker className="academic-input sm" small value={start} onChange={setStart} />
-          <DatePicker className="academic-input sm" small value={end} onChange={setEnd} />
+          <DatePicker className="academic-input sm" small value={start} onChange={setStart} placeholder="Start date" />
+          <DatePicker className="academic-input sm" small value={end} onChange={setEnd} placeholder="End date" />
           <select className="academic-select" value={purpose} onChange={(e) => setPurpose(e.target.value)}>
             {PURPOSES.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
@@ -457,7 +457,7 @@ const DocumentsPanel = memo(function DocumentsPanel({ items = [], onChange }) {
         </select>
         <input className="academic-input" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Number" />
         <input className="academic-input sm" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (optional, e.g. Schengen)" />
-        <DatePicker className="academic-input sm" small value={expiry} onChange={setExpiry} />
+        <DatePicker className="academic-input sm" small value={expiry} onChange={setExpiry} placeholder="Expiry date" />
         <button type="submit" className="academic-submit">Add</button>
       </form>
       {!items.length && <div className="panel-empty">No documents yet</div>}

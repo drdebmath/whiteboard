@@ -69,6 +69,7 @@ const ReminderPanel = memo(function ReminderPanel({ items, onChange }) {
           withTime
           value={when}
           onChange={setWhen}
+          placeholder="When"
         />
         <button className="btn-add" aria-label="Add" onClick={add}>+</button>
       </div>

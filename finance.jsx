@@ -118,7 +118,7 @@ const GrantCard = memo(function GrantCard({ grant, isOpen, onToggle, onUpdate, o
               <MoneyInput value={grant.advance} onCommit={(v) => onUpdate({ advance: v })} className="grant-input" />
             </label>
             <label>End date
-              <DatePicker className="academic-input sm" small value={grant.expiry ? new Date(grant.expiry).toISOString().slice(0, 10) : ""} onChange={(v) => onUpdate({ expiry: v ? new Date(v).getTime() : null })} />
+              <DatePicker className="academic-input sm" small value={grant.expiry ? new Date(grant.expiry).toISOString().slice(0, 10) : ""} onChange={(v) => onUpdate({ expiry: v ? new Date(v).getTime() : null })} placeholder="End date" />
             </label>
           </div>
           <div className="grant-summary">
@@ -236,7 +236,7 @@ const GrantPanel = memo(function GrantPanel({ items = [], onChange, currency = "
           <input className="academic-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Grant name / agency" />
           <input className="academic-input sm" type="number" inputMode="decimal" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="Total" />
           <input className="academic-input sm" type="number" inputMode="decimal" value={advance} onChange={(e) => setAdvance(e.target.value)} placeholder="Advance" />
-          <DatePicker className="academic-input sm" small value={expiry} onChange={setExpiry} title="End date" />
+          <DatePicker className="academic-input sm" small value={expiry} onChange={setExpiry} title="End date" placeholder="End date" />
           <button type="submit" className="academic-submit">Add</button>
         </form>
       )}
@@ -316,7 +316,7 @@ const BillsPanel = memo(function BillsPanel({ items = [], onChange, currency = "
           <select className="academic-select" value={cadence} onChange={(e) => setCadence(e.target.value)}>
             {BILL_CADENCES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
-          <DatePicker className="academic-input sm" small value={due} onChange={setDue} />
+          <DatePicker className="academic-input sm" small value={due} onChange={setDue} placeholder="Due date" />
           <button type="submit" className="academic-submit">Add</button>
         </form>
       )}
@@ -397,7 +397,7 @@ const ReimbursementPanel = memo(function ReimbursementPanel({ items = [], onChan
           <input className="academic-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What forâ€¦" />
           <input className="academic-input sm" type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
           <input className="academic-input sm" value={party} onChange={(e) => setParty(e.target.value)} placeholder="From" />
-          <DatePicker className="academic-input sm" small value={due} onChange={setDue} title="Due date" />
+          <DatePicker className="academic-input sm" small value={due} onChange={setDue} title="Due date" placeholder="Due date" />
           <button type="submit" className="academic-submit">Add</button>
         </form>
       )}
@@ -568,7 +568,7 @@ const LoanPanel = memo(function LoanPanel({ items = [], onChange, currency = "â‚
           <input className="academic-input sm" type="number" inputMode="decimal" value={outstanding} onChange={(e) => setOutstanding(e.target.value)} placeholder="Outstanding" />
           <input className="academic-input sm" type="number" inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="Rate %" />
           <input className="academic-input sm" type="number" inputMode="decimal" value={emi} onChange={(e) => setEmi(e.target.value)} placeholder="EMI" />
-          <DatePicker className="academic-input sm" small value={due} onChange={setDue} title="Next payment" />
+          <DatePicker className="academic-input sm" small value={due} onChange={setDue} title="Next payment" placeholder="Next payment" />
           <button type="submit" className="academic-submit">Add</button>
         </form>
       )}

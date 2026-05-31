@@ -96,14 +96,14 @@ const AdviseeCard = memo(function AdviseeCard({ student, isOpen, onToggle, onUpd
               <input className="academic-input" value={student.topic || ""} onChange={(e) => onUpdate({ topic: e.target.value })} placeholder="Research topic" />
             </label>
             <label>Next meeting
-              <DatePicker className="academic-input sm" small value={dateVal(student.nextMeeting)} onChange={(v) => onUpdate({ nextMeeting: toTs(v) })} />
+              <DatePicker className="academic-input sm" small value={dateVal(student.nextMeeting)} onChange={(v) => onUpdate({ nextMeeting: toTs(v) })} placeholder="Meeting date" />
             </label>
           </div>
           <div className="grant-heads">
             <div className="grant-heads-label">Milestones</div>
             <div className="todo-input-row">
               <input className="todo-input" value={mText} onChange={(e) => setMText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addMilestone()} placeholder="e.g. Comprehensive exam…" />
-              <DatePicker className="academic-input sm" small value={mDue} onChange={setMDue} />
+              <DatePicker className="academic-input sm" small value={mDue} onChange={setMDue} placeholder="Milestone due" />
               <button className="btn-add" aria-label="Add milestone" onClick={addMilestone}>+</button>
             </div>
             {!milestones.length && <div className="panel-empty">No milestones yet</div>}
@@ -237,8 +237,8 @@ const SubmissionsPanel = memo(function SubmissionsPanel({ items = [], onChange }
           <select className="academic-input sm" value={stage} onChange={(e) => setStage(e.target.value)} title="Stage">
             {SUB_STAGES.map((st) => <option key={st} value={st}>{SUB_STAGE_LABEL[st]}</option>)}
           </select>
-          <DatePicker className="academic-input sm" small value={submitted} onChange={setSubmitted} title="Submitted on" />
-          <DatePicker className="academic-input sm" small value={decisionDue} onChange={setDecisionDue} title="Notification date" />
+          <DatePicker className="academic-input sm" small value={submitted} onChange={setSubmitted} title="Submitted on" placeholder="Submitted on" />
+          <DatePicker className="academic-input sm" small value={decisionDue} onChange={setDecisionDue} title="Notification date" placeholder="Notification due" />
           <button type="submit" className="academic-submit">{editingId ? "Save" : "Add"}</button>
         </form>
       )}
@@ -314,7 +314,7 @@ const ProposalsPanel = memo(function ProposalsPanel({ items = [], onChange, curr
           <input className="academic-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Proposal title" />
           <input className="academic-input sm" value={agency} onChange={(e) => setAgency(e.target.value)} placeholder="Agency" />
           <input className="academic-input sm" type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
-          <DatePicker className="academic-input sm" small value={callDeadline} onChange={setCallDeadline} title="Call deadline" />
+          <DatePicker className="academic-input sm" small value={callDeadline} onChange={setCallDeadline} title="Call deadline" placeholder="Call deadline" />
           <button type="submit" className="academic-submit">Add</button>
         </form>
       )}
@@ -376,8 +376,8 @@ const CFPPanel = memo(function CFPPanel({ items = [], onChange }) {
       {showForm && (
         <form className="academic-form" onSubmit={add}>
           <input className="academic-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Conference / journal" />
-          <DatePicker className="academic-input sm" small value={abstractDue} onChange={setAbstractDue} title="Abstract due" />
-          <DatePicker className="academic-input sm" small value={paperDue} onChange={setPaperDue} title="Paper due" />
+          <DatePicker className="academic-input sm" small value={abstractDue} onChange={setAbstractDue} title="Abstract due" placeholder="Abstract due" />
+          <DatePicker className="academic-input sm" small value={paperDue} onChange={setPaperDue} title="Full paper due" placeholder="Full paper due" />
           <button type="submit" className="academic-submit">Add</button>
         </form>
       )}
@@ -434,7 +434,7 @@ const ReviewsPanel = memo(function ReviewsPanel({ items = [], onChange }) {
         <form className="academic-form" onSubmit={add}>
           <input className="academic-input sm" value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Venue" />
           <input className="academic-input" value={paper} onChange={(e) => setPaper(e.target.value)} placeholder="Paper / ID" />
-          <DatePicker className="academic-input sm" small value={due} onChange={setDue} title="Due" />
+          <DatePicker className="academic-input sm" small value={due} onChange={setDue} title="Review due" placeholder="Review due" />
           <button type="submit" className="academic-submit">Add</button>
         </form>
       )}
@@ -491,7 +491,7 @@ const LettersPanel = memo(function LettersPanel({ items = [], onChange }) {
         <form className="academic-form" onSubmit={add}>
           <input className="academic-input sm" value={student} onChange={(e) => setStudent(e.target.value)} placeholder="For whom" />
           <input className="academic-input" value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="Purpose / program" />
-          <DatePicker className="academic-input sm" small value={due} onChange={setDue} title="Due" />
+          <DatePicker className="academic-input sm" small value={due} onChange={setDue} title="Letter due" placeholder="Letter due" />
           <button type="submit" className="academic-submit">Add</button>
         </form>
       )}

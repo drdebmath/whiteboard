@@ -1812,7 +1812,9 @@ html:not(.dark) .academic-select { color-scheme: light; }
   text-align: left;
 }
 .dp-small .dp-trigger { font-size: 12px; padding: 5px 8px; min-width: 0; }
-.dp-trigger--empty .dp-value { color: var(--muted); }
+/* Empty state shows the field's purpose (e.g. "Abstract due"), so render it at
+   ink-2 — legible as a label, not a faint placeholder. */
+.dp-trigger--empty .dp-value { color: var(--ink-2); }
 .dp-trigger--open { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
 .dp-trigger:hover:not(.dp-trigger--open) { border-color: var(--ink-3, var(--muted)); }
 .dp-icon { display: flex; align-items: center; color: var(--muted); flex-shrink: 0; }
