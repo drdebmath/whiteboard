@@ -3,23 +3,10 @@
 // Panels follow the { items, onChange } contract; TripAlerts is rendered above the grid.
 
 const { useState, memo } = React;
-const { uid, MS } = window.MyBoardStore;
-const { formatWhen, relTime, AutoTextarea } = window;
+const { uid, MS, safeHref } = window.MyBoardStore;
+const { formatWhen, relTime, AutoTextarea, Chip, TaskList } = window;
 
 /* ─── shared bits ─── */
-
-function safeHref(url) {
-  if (!url) return null;
-  try {
-    const u = new URL(String(url).trim());
-    if (u.protocol === "http:" || u.protocol === "https:") return u.href;
-  } catch (_) {}
-  return null;
-}
-
-function TChip({ label, color }) {
-  return <span className="kind-chip" style={{ "--chip": color || "var(--muted)" }}>{label}</span>;
-}
 
 const PURPOSES = ["Conference", "Personal", "Family", "Work", "Other"];
 const PURPOSE_COLOR = {
@@ -115,45 +102,6 @@ const TripAlerts = memo(function TripAlerts({ items = [], onChange }) {
   );
 });
 
-/* ─── Trip to-do checklist (local; mirrors ProjectTaskList) ─── */
-
-function TripTaskList({ tasks = [], onChange }) {
-  const [text, setText] = useState("");
-
-  const add = () => {
-    const t = text.trim();
-    if (!t) return;
-    onChange([...tasks, { id: uid(), text: t, done: false }]);
-    setText("");
-  };
-  const toggle = (id) => onChange(tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
-  const remove = (id) => onChange(tasks.filter((t) => t.id !== id));
-
-  return (
-    <div className="trip-task-list">
-      <div className="todo-input-row">
-        <input
-          className="todo-input"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && add()}
-          placeholder="Add to-do…"
-        />
-        <button className="btn-add" aria-label="Add" onClick={add}>+</button>
-      </div>
-      <ul className="todo-list">
-        {tasks.map((t) => (
-          <li key={t.id} className={"todo-item" + (t.done ? " done" : "")}>
-            <input type="checkbox" checked={t.done} onChange={() => toggle(t.id)} />
-            <span className="todo-text">{t.text}</span>
-            <button className="btn-delete" aria-label="Delete" onClick={() => remove(t.id)}>×</button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 /* ─── TripCard / TripsPanel ─── */
 
 const TripCard = memo(function TripCard({ trip, isOpen, onToggle, onUpdate, onRemove }) {
@@ -181,7 +129,7 @@ const TripCard = memo(function TripCard({ trip, isOpen, onToggle, onUpdate, onRe
         >
           {trip.destination || "New Trip"}
         </span>
-        <TChip label={trip.purpose} color={PURPOSE_COLOR[trip.purpose]} />
+        <Chip label={trip.purpose} color={PURPOSE_COLOR[trip.purpose]} />
         {range && <span className="trip-range">{range}</span>}
         <span className="trip-booked-count" title="Bookings done">{bookedCount}/3</span>
         <button className="btn-delete" aria-label="Delete" onClick={onRemove}>×</button>
@@ -229,7 +177,7 @@ const TripCard = memo(function TripCard({ trip, isOpen, onToggle, onUpdate, onRe
           </div>
           <div className="project-section">
             <label>To-do</label>
-            <TripTaskList tasks={trip.tasks || []} onChange={(tasks) => onUpdate({ tasks })} />
+            <TaskList items={trip.tasks || []} onChange={(tasks) => onUpdate({ tasks })} placeholder="Add to-do…" />
           </div>
           <div className="project-section">
             <label>Notes</label>
@@ -484,7 +432,7 @@ const DocumentsPanel = memo(function DocumentsPanel({ items = [], onChange }) {
           else if (exp.soon) cls += " soon";
           return (
             <li key={d.id} data-mb-id={d.id} className={cls}>
-              <TChip label={d.kind} color={DOC_KIND_COLOR[d.kind]} />
+              <Chip label={d.kind} color={DOC_KIND_COLOR[d.kind]} />
               <span className="doc-name">{d.name}</span>
               {d.number && <span className="doc-number">{d.number}</span>}
               <span className="doc-expiry">{exp.text}</span>

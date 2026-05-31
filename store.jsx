@@ -57,6 +57,17 @@ function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+// Return a safe http(s) href for a user-entered URL, or null. Shared by every
+// panel that renders an external link so the protocol check lives in one place.
+function safeHref(url) {
+  if (!url) return null;
+  try {
+    const u = new URL(String(url).trim());
+    if (u.protocol === "http:" || u.protocol === "https:") return u.href;
+  } catch (_) {}
+  return null;
+}
+
 function parseDue(value) {
   if (value == null || value === "") return null;
   if (typeof value === "number" && !Number.isNaN(value)) return value;
@@ -549,6 +560,7 @@ window.MyBoardStore = {
   pushRemote,
   debounce,
   uid,
+  safeHref,
   num,
   formatMoney,
   MS,

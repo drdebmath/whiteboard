@@ -1,6 +1,6 @@
 const { useState, memo } = React;
 const { uid, MS } = window.MyBoardStore;
-const { formatWhen } = window;
+const { formatWhen, Chip, EditButton } = window;
 
 // formatWhen() returns { label, rel, overdue, soon }; build a printable string.
 function dueText(due) {
@@ -75,14 +75,6 @@ const TYPE_COLORS = {
   Editorial: "oklch(0.7 0.11 70)",
   Other: "oklch(0.62 0.02 270)",
 };
-
-function KindChip({ kind, color }) {
-  return (
-    <span className="kind-chip" style={{ "--chip": color || "var(--muted)" }}>
-      {kind}
-    </span>
-  );
-}
 
 const DeadlinesPanel = memo(function DeadlinesPanel({ items = [], onChange }) {
   const [showForm, setShowForm] = useState(false);
@@ -171,7 +163,7 @@ const DeadlinesPanel = memo(function DeadlinesPanel({ items = [], onChange }) {
               {bucketItems.map((item) => (
                 <div key={item.id} data-mb-id={item.id} className={"deadline-row" + (item.done ? " done" : "")} style={{ "--row-accent": KIND_COLORS[item.kind] || "var(--line-2)" }}>
                   <input type="checkbox" checked={!!item.done} onChange={() => toggleDone(item.id)} aria-label="Mark done" />
-                  <KindChip kind={item.kind} color={KIND_COLORS[item.kind]} />
+                  <Chip label={item.kind} color={KIND_COLORS[item.kind]} />
                   {editingId === item.id ? (
                     <>
                       <select className="academic-select" value={editKind} onChange={(e) => setEditKind(e.target.value)}>
@@ -266,7 +258,6 @@ const TeachingPanel = memo(function TeachingPanel({ items = [], onChange }) {
         title: formTitle.trim(),
         total: Number(formTotal) || 1,
         done: Number(formDone) || 0,
-        subtasks: [],
         createdAt: Date.now(),
       },
     ]);
@@ -396,7 +387,7 @@ const TeachingPanel = memo(function TeachingPanel({ items = [], onChange }) {
   );
 });
 
-const ServicePanel = memo(function ServicePanel({ items = [], onAdd, onRemove }) {
+const ServicePanel = memo(function ServicePanel({ items = [], onChange }) {
   const [showForm, setShowForm] = useState(false);
   const [formType, setFormType] = useState(SERVICE_TYPES[0]);
   const [formTitle, setFormTitle] = useState("");
@@ -410,11 +401,13 @@ const ServicePanel = memo(function ServicePanel({ items = [], onAdd, onRemove })
     e.preventDefault();
     if (!formTitle.trim()) return;
     const due = formDate ? new Date(formDate).getTime() : null;
-    onAdd?.({ id: uid(), type: formType, title: formTitle.trim(), due, createdAt: Date.now() });
+    onChange([...items, { id: uid(), type: formType, title: formTitle.trim(), due, createdAt: Date.now() }]);
     setFormTitle("");
     setFormDate("");
     setShowForm(false);
   };
+
+  const remove = (id) => onChange(items.filter((i) => i.id !== id));
 
   const startEdit = (item) => {
     setEditingId(item.id);
@@ -425,20 +418,7 @@ const ServicePanel = memo(function ServicePanel({ items = [], onAdd, onRemove })
 
   const saveEdit = (id) => {
     const due = editDate ? new Date(editDate).getTime() : null;
-    if (typeof onRemove !== 'function') {}
-    // items are owned by parent; mutate via onRemove/add pattern isn't available here,
-    // but parent passes onAdd/onRemove only; so we update by calling onRemove+onAdd replacement.
-    // Simpler approach: create new list and call onAdd via window.MyBoardStore? Instead, call onRemove and onAdd to replace.
-    const updated = items.map((i) => (i.id === id ? { ...i, type: editType, title: editTitle.trim(), due } : i));
-    // Use onRemove and onAdd not appropriate; instead call a parent update if available via window — fallback: emit via custom event.
-    // For now, replace list by calling window.MyBoardStore.replaceServiceItems if available.
-    if (window.replaceServiceItems) {
-      window.replaceServiceItems(updated);
-    } else if (typeof onRemove === 'function' && typeof onAdd === 'function') {
-      // best-effort: remove and re-add updated items
-      // remove all and re-add
-      updated.forEach((it) => onAdd(it));
-    }
+    onChange(items.map((i) => (i.id === id ? { ...i, type: editType, title: editTitle.trim(), due } : i)));
     setEditingId(null);
   };
 
@@ -510,12 +490,10 @@ const ServicePanel = memo(function ServicePanel({ items = [], onAdd, onRemove })
                       ) : (
                         <>
                           <div className="service-card-top">
-                            <KindChip kind={item.type} color={TYPE_COLORS[item.type]} />
+                            <Chip label={item.type} color={TYPE_COLORS[item.type]} />
                             <div className="service-card-actions">
                               <EditButton onClick={() => startEdit(item)} />
-                              {onRemove && (
-                                <button className="btn-delete" aria-label="Delete" onClick={() => onRemove(item.id)}>×</button>
-                              )}
+                              <button className="btn-delete" aria-label="Delete" onClick={() => remove(item.id)}>×</button>
                             </div>
                           </div>
                           <div className="service-title">{item.title}</div>

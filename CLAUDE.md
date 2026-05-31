@@ -35,7 +35,7 @@ Commit directly to `main` — do **not** create feature branches. When asked to 
 - **`tweaks-panel.jsx`** — a dev/design tweak UI (sliders, toggles, selects) toggled by keyboard; persists tweak values to localStorage. Injects its own CSS via `__TWEAKS_STYLE`.
 - **`styles.css`** — all styling (large, hand-written, oklch color space).
 
-Cross-file calls happen via `window` (e.g. `window.formatWhen`, `window.relTime`, `window.replaceServiceItems`, `window.__toggleTweaksPanel`). When you need a function across files, attach it to `window` in the defining file.
+Cross-file calls happen via `window` (e.g. `window.formatWhen`, `window.relTime`, `window.__toggleTweaksPanel`). Shared UI primitives (`Chip`, `TaskList`, `EditButton`, `AutoTextarea`) and helpers (`safeHref` on `MyBoardStore`) are likewise attached to `window` and reused across tabs. When you need a function across files, attach it to `window` in the defining file.
 
 ## Data & privacy
 

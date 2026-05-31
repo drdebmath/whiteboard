@@ -4,13 +4,9 @@
 
 const { useState, useEffect, useRef, memo } = React;
 const { uid, num, formatMoney } = window.MyBoardStore;
-const { formatWhen } = window;
+const { formatWhen, Chip } = window;
 
 /* ─── shared bits ─── */
-
-function FinChip({ label, color }) {
-  return <span className="kind-chip" style={{ "--chip": color || "var(--muted)" }}>{label}</span>;
-}
 
 // Bill due → printable "Mon D · rel" with overdue/soon flags.
 function dueInfo(due) {
@@ -338,7 +334,7 @@ const BillsPanel = memo(function BillsPanel({ items = [], onChange, currency = "
           return (
             <li key={b.id} data-mb-id={b.id} className={cls}>
               <span className="bill-name">{b.name}</span>
-              <FinChip label={CADENCE_LABEL[b.cadence] || b.cadence} color="var(--muted)" />
+              <Chip label={CADENCE_LABEL[b.cadence] || b.cadence} color="var(--muted)" />
               <span className="bill-amount money">{formatMoney(b.amount, currency)}</span>
               <span className="bill-due">{text}</span>
               <button className="btn-delete" aria-label="Delete" onClick={() => remove(b.id)}>×</button>
@@ -679,7 +675,7 @@ const InvestmentPanel = memo(function InvestmentPanel({ items = [], onChange, cu
           return (
             <li key={i.id} data-mb-id={i.id} className="invest-item">
               <div className="invest-row">
-                <FinChip label={i.type} color={INVEST_TYPE_COLOR[i.type]} />
+                <Chip label={i.type} color={INVEST_TYPE_COLOR[i.type]} />
                 <span className="invest-name">{i.name}</span>
                 <span className={"invest-gain " + (up ? "money-pos" : "money-neg")}>
                   {up ? "▲" : "▼"} {formatMoney(Math.abs(gain), currency)} ({pct >= 0 ? "+" : ""}{pct.toFixed(1)}%)

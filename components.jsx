@@ -1,13 +1,10 @@
 const { useState, useRef, useLayoutEffect, memo } = React;
-const { uid, dateKey, todayKey, daysBetweenKeys, MS } = window.MyBoardStore;
+const { uid, dateKey, todayKey, daysBetweenKeys, MS, safeHref } = window.MyBoardStore;
 
-function safeHref(url) {
-  if (!url) return null;
-  try {
-    const u = new URL(String(url).trim());
-    if (u.protocol === "http:" || u.protocol === "https:") return u.href;
-  } catch (_) {}
-  return null;
+/* ─── Chip — a small colored type/category tag, shared across every tab ─── */
+
+function Chip({ label, color }) {
+  return <span className="kind-chip" style={{ "--chip": color || "var(--muted)" }}>{label}</span>;
 }
 
 /* ─── time helpers ─── */
@@ -120,9 +117,9 @@ function AutoTextarea({ value, onChange, placeholder }) {
   );
 }
 
-/* ─── ProjectPanel ─── */
+/* ─── TaskList — a simple {id,text,done} checklist, shared by projects & trips ─── */
 
-function ProjectTaskList({ items, onChange }) {
+function TaskList({ items = [], onChange, placeholder = 'Add task…' }) {
   const [text, setText] = useState('');
 
   const add = () => {
@@ -148,7 +145,7 @@ function ProjectTaskList({ items, onChange }) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && add()}
-          placeholder="Add task…"
+          placeholder={placeholder}
         />
         <button className="btn-add" aria-label="Add" onClick={add}>+</button>
       </div>
@@ -164,6 +161,8 @@ function ProjectTaskList({ items, onChange }) {
     </div>
   );
 }
+
+/* ─── ProjectPanel ─── */
 
 /* ─── Edit button (pen icon) ─── */
 
@@ -305,14 +304,14 @@ const ProjectCard = memo(function ProjectCard({ proj, isOpen, onToggle, onUpdate
           </div>
           <div className="project-section">
             <label>My Tasks</label>
-            <ProjectTaskList
+            <TaskList
               items={proj.myTasks || []}
               onChange={(t) => onUpdate({ myTasks: t })}
             />
           </div>
           <div className="project-section">
             <label>Others' Tasks</label>
-            <ProjectTaskList
+            <TaskList
               items={proj.othersTasks || []}
               onChange={(t) => onUpdate({ othersTasks: t })}
             />
@@ -388,7 +387,6 @@ const ProjectPanel = memo(function ProjectPanel({ items = [], onChange }) {
       notes: '',
       overleaf: '',
       github: '',
-      wikiLinks: [],
       priority: 'none',
       created: Date.now(),
     }]);
@@ -967,6 +965,9 @@ Object.assign(window, {
   ChoresPanel,
   GoalsPanel,
   AutoTextarea,
+  Chip,
+  TaskList,
+  EditButton,
   formatWhen,
   relTime,
 });

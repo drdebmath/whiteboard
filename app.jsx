@@ -41,45 +41,48 @@ const CATEGORIES = [
   { id: "travel", label: "Travel", accent: "oklch(0.62 0.15 300)", soft: "oklch(0.62 0.15 300 / 0.13)" },
 ];
 
+// ─── Dated items: one registry, used by both the banners and the stats ───
+//
+// Every panel that carries a date is described once here so the upcoming-item
+// banners and the at-a-glance stats can never drift apart (or silently omit a
+// panel, as finance once did). Each source says where to read its list, which
+// field is the date, what to skip (done/received), and how to label it.
+
+const DATE_SOURCES = [
+  { cat: "academic", kind: "Deadline", list: (s) => s.academic.deadlines, date: (i) => i.due, skip: (i) => i.done, text: (i) => i.title || i.text },
+  { cat: "academic", kind: "Service", list: (s) => s.academic.service, date: (i) => i.due, text: (i) => i.title || i.text },
+  { cat: "household", kind: "Reminder", list: (s) => s.household.reminders, date: (i) => i.when, skip: (i) => i.done, text: (i) => i.text },
+  { cat: "health", kind: "Reminder", list: (s) => s.health.reminders, date: (i) => i.when, skip: (i) => i.done, text: (i) => i.text },
+  { cat: "finance", kind: "Bill", list: (s) => s.finance.bills, date: (i) => i.due, text: (i) => i.name },
+  { cat: "finance", kind: "Claim", list: (s) => s.finance.reimbursements, date: (i) => i.due, skip: (i) => i.status === "received", text: (i) => i.title },
+  { cat: "finance", kind: "Loan", list: (s) => s.finance.loans, date: (i) => i.due, text: (i) => `${i.name} payment` },
+  { cat: "finance", kind: "Grant", list: (s) => s.finance.grants, date: (i) => i.expiry, text: (i) => `${i.title} ends` },
+  { cat: "travel", kind: "Trip", list: (s) => s.travel.trips, date: (i) => i.start, text: (i) => i.destination },
+  { cat: "travel", kind: "Document", list: (s) => s.travel.documents, date: (i) => i.expiry, text: (i) => `${i.name} expires` },
+];
+
+// Walk every dated item across the board, normalizing its date (epoch ms, ISO
+// date string, or datetime-local string) to a timestamp before calling `fn`.
+function eachDatedItem(state, fn) {
+  for (const src of DATE_SOURCES) {
+    for (const item of src.list(state) || []) {
+      if (src.skip && src.skip(item)) continue;
+      const raw = src.date(item);
+      if (raw == null || raw === "") continue;
+      const ts = typeof raw === "number" ? raw : new Date(raw).getTime();
+      if (Number.isNaN(ts)) continue;
+      fn({ ts, cat: src.cat, kind: src.kind, text: src.text(item) });
+    }
+  }
+}
+
 // ─── Collect upcoming items ───
 
 function collectUpcomingPair(state) {
   // Return both the soonest future item (`nextUp`) and the most recent
   // overdue item (`nearestOverdue`). Items follow the shape { text, cat, kind, ts }.
   const candidates = [];
-  const push = (ts, item) => {
-    if (Number.isNaN(ts)) return;
-    candidates.push({ ...item, ts });
-  };
-
-  for (const d of state.academic.deadlines) {
-    if (d.done || !d.due) continue;
-    push(new Date(d.due).getTime(), { text: d.title || d.text, cat: "academic", kind: "Deadline" });
-  }
-  for (const s of state.academic.service) {
-    if (!s.due) continue;
-    push(new Date(s.due).getTime(), { text: s.title || s.text, cat: "academic", kind: "Service" });
-  }
-  for (const r of state.household.reminders) {
-    if (r.done || !r.when) continue;
-    push(new Date(r.when).getTime(), { text: r.text, cat: "household", kind: "Reminder" });
-  }
-  for (const r of state.health.reminders) {
-    if (r.done || !r.when) continue;
-    push(new Date(r.when).getTime(), { text: r.text, cat: "health", kind: "Reminder" });
-  }
-  for (const b of state.finance.bills) {
-    if (!b.due) continue;
-    push(b.due, { text: b.name, cat: "finance", kind: "Bill" });
-  }
-  for (const t of state.travel.trips) {
-    if (!t.start) continue;
-    push(new Date(t.start).getTime(), { text: t.destination, cat: "travel", kind: "Trip" });
-  }
-  for (const d of state.travel.documents) {
-    if (!d.expiry) continue;
-    push(d.expiry, { text: `${d.name} expires`, cat: "travel", kind: "Document" });
-  }
+  eachDatedItem(state, (item) => candidates.push(item));
 
   if (!candidates.length) return { nextUp: null, nearestOverdue: null };
   const now = Date.now();
@@ -146,20 +149,10 @@ function computeStats(state, now) {
   const t = now.getTime();
   let overdue = 0;
   let week = 0;
-  const consider = (raw, done) => {
-    if (done || raw == null || raw === "") return;
-    const ts = typeof raw === "number" ? raw : new Date(raw).getTime();
-    if (Number.isNaN(ts)) return;
+  eachDatedItem(state, ({ ts }) => {
     if (ts < t) overdue++;
     else if (ts - t < MS.WEEK) week++;
-  };
-  state.academic.deadlines.forEach((d) => consider(d.due, d.done));
-  state.academic.service.forEach((s) => consider(s.due, false));
-  state.household.reminders.forEach((r) => consider(r.when, r.done));
-  state.health.reminders.forEach((r) => consider(r.when, r.done));
-  state.finance.bills.forEach((b) => consider(b.due, false));
-  state.travel.trips.forEach((t) => consider(t.start, false));
-  state.travel.documents.forEach((d) => consider(d.expiry, false));
+  });
   return { overdue, week };
 }
 
@@ -782,8 +775,7 @@ function App() {
             />
             <ServicePanel
               items={s.service}
-              onAdd={(sv) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, service: [...prev.academic.service, sv] } }))}
-              onRemove={(id) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, service: prev.academic.service.filter((sv) => sv.id !== id) } }))}
+              onChange={(service) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, service } }))}
             />
             <ProjectPanel
               items={s.projects || []}
