@@ -7,6 +7,7 @@ const STORAGE_KEY = "myboard.v1";
 const PROFILE_NAME_KEY = "myboard.profileName";
 const SYNC_CONFIG_KEY = "myboard.gistSync";
 const LEGACY_SYNC_URL_KEY = "myboard.syncUrl";
+const INTRO_SEEN_KEY = "myboard.introSeen";
 const DEFAULT_GIST_FILENAME = "myboard.json";
 
 // Time constants (ms). Shared by components.jsx, academic.jsx and app.jsx.
@@ -421,6 +422,15 @@ function getProfileName() {
   return localStorage.getItem(PROFILE_NAME_KEY) || "";
 }
 
+function getIntroSeen() {
+  return localStorage.getItem(INTRO_SEEN_KEY) === "1";
+}
+
+function setIntroSeen(seen) {
+  if (seen) localStorage.setItem(INTRO_SEEN_KEY, "1");
+  else localStorage.removeItem(INTRO_SEEN_KEY);
+}
+
 function setProfileName(name) {
   const next = (name || "").trim();
   if (next) localStorage.setItem(PROFILE_NAME_KEY, next);
@@ -552,6 +562,8 @@ window.MyBoardStore = {
   normalizeState,
   getProfileName,
   setProfileName,
+  getIntroSeen,
+  setIntroSeen,
   getSyncConfig,
   setSyncConfig,
   hasSyncConfig,

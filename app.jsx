@@ -4,6 +4,7 @@
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
 const {
   loadLocal, saveLocal, getProfileName, setProfileName,
+  getIntroSeen, setIntroSeen,
   getSyncConfig, setSyncConfig, hasSyncConfig,
   fetchRemote, createRemote, pushRemote, debounce,
   normalizeState,
@@ -118,13 +119,40 @@ function syncedAgoLabel(ts, now) {
 }
 
 // ─── Greeting ───
+//
+// One greeting per hour of the day (index = 0–23), so the header line shifts
+// with the clock through the night, morning, afternoon and evening rather than
+// sitting on four broad buckets.
+
+const HOURLY_GREETINGS = [
+  "Burning the midnight oil",   // 12 AM
+  "Still up",                   //  1 AM
+  "The quiet hours",            //  2 AM
+  "Deep in the night",          //  3 AM
+  "Up before the birds",        //  4 AM
+  "Dawn is breaking",           //  5 AM
+  "Rise and shine",             //  6 AM
+  "Good morning",               //  7 AM
+  "Morning",                    //  8 AM
+  "Hope your morning's going well", //  9 AM
+  "Mid-morning momentum",       // 10 AM
+  "Almost noon",                // 11 AM
+  "Good afternoon",             // 12 PM
+  "Hope you've had lunch",      //  1 PM
+  "Good afternoon",             //  2 PM
+  "Afternoon stretch",          //  3 PM
+  "Easing through the afternoon", //  4 PM
+  "Good evening",               //  5 PM
+  "Evening's here",             //  6 PM
+  "Hope you had a good day",    //  7 PM
+  "Winding down for the day",   //  8 PM
+  "A calm evening to you",      //  9 PM
+  "Good night",                 // 10 PM
+  "Time to rest soon",          // 11 PM
+];
 
 function greetingFor(date) {
-  const h = date.getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  if (h < 21) return "Good evening";
-  return "Good night";
+  return HOURLY_GREETINGS[date.getHours()] || "Hello";
 }
 
 // ─── Clock component ───
@@ -295,6 +323,80 @@ function NameModal({ onClose, onDone }) {
   );
 }
 
+// ─── WelcomeModal ───
+//
+// The first-run introduction. Also reachable any time from the floating help
+// (?) button next to the settings gear, so it doubles as the "what is this"
+// reference. `firstRun` switches the copy/button between an introduction and a
+// plain help sheet.
+
+function WelcomeModal({ firstRun, onClose }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal modal-welcome" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          {firstRun ? "Welcome to MyBoard" : "About MyBoard"}
+        </div>
+
+        <p className="welcome-lede">
+          MyBoard is your private, local-first dashboard for the things you’re
+          keeping track of — work, home, health, money and travel — all in one
+          place. Everything lives in this browser; nothing is sent anywhere
+          unless you turn on sync.
+        </p>
+
+        <div className="welcome-section-label">Your five tabs</div>
+        <ul className="welcome-tabs">
+          {CATEGORIES.map((c, i) => (
+            <li key={c.id} className="welcome-tab" style={{ "--cat": c.accent }}>
+              <span className="welcome-tab-key">{i + 1}</span>
+              <span className="welcome-tab-name">{c.label}</span>
+              <span className="welcome-tab-desc">{CATEGORY_BLURBS[c.id]}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="welcome-section-label">Good to know</div>
+        <ul className="welcome-points">
+          <li>
+            The banners up top always surface what’s <strong>overdue</strong> and
+            what’s <strong>next up</strong> across every tab.
+          </li>
+          <li>
+            Press <kbd>1</kbd>–<kbd>5</kbd> to switch tabs, <kbd>⌘F</kbd> to
+            search, <kbd>⌘Z</kbd> to undo, and <kbd>⌘⇧T</kbd> for appearance
+            tweaks (or use the <span className="welcome-gear">⚙</span> button).
+          </li>
+          <li>
+            Use <strong>Gist</strong> in the bottom bar to optionally sync across
+            devices through a private GitHub gist — your data and token stay in
+            your browser.
+          </li>
+          <li>
+            Reopen this guide any time from the <strong>?</strong> button in the
+            corner.
+          </li>
+        </ul>
+
+        <div className="modal-actions">
+          <button type="button" className="modal-btn modal-btn-primary" onClick={onClose}>
+            {firstRun ? "Get started" : "Got it"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Short, friendly per-tab descriptions used in the welcome guide.
+const CATEGORY_BLURBS = {
+  academic: "Projects, deadlines, teaching, service, readings.",
+  household: "Chores, shopping lists and reminders.",
+  health: "Habits to keep and health reminders.",
+  finance: "Grants, bills, loans, savings and investments.",
+  travel: "Trips, packing, documents and a wishlist.",
+};
+
 // ─── useTweaks defaults ───
 
 const TWEAK_DEFAULTS = {
@@ -326,7 +428,12 @@ function App() {
 
   const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const [showSetup, setShowSetup] = useState(false);
-  const [showName, setShowName] = useState(!profileName);
+  // First-run intro shows before anything else; the name prompt waits until the
+  // intro is dismissed so the two modals never stack. `showHelp` reopens the
+  // same guide later from the help (?) button.
+  const [showIntro, setShowIntro] = useState(() => !getIntroSeen());
+  const [showHelp, setShowHelp] = useState(false);
+  const [showName, setShowName] = useState(() => getIntroSeen() && !profileName);
 
   const fileInputRef = useRef(null);
   const searchRef = useRef(null);
@@ -751,6 +858,15 @@ function App() {
     setShowName(false);
   }, []);
 
+  // ─── Intro dismissed ───
+  // Remember the intro was seen, then prompt for a name if we don't have one.
+
+  const handleIntroClose = useCallback(() => {
+    setShowIntro(false);
+    setIntroSeen(true);
+    setShowName((prev) => prev || !getProfileName());
+  }, []);
+
   // ─── Render tab panels ───
 
   const renderPanels = (catId) => {
@@ -1135,6 +1251,18 @@ function App() {
         />
       )}
       {showName && <NameModal onClose={() => setShowName(false)} onDone={handleNameDone} />}
+      {showIntro && <WelcomeModal firstRun onClose={handleIntroClose} />}
+      {showHelp && <WelcomeModal onClose={() => setShowHelp(false)} />}
+
+      {/* Help button — sits beside the settings gear, reopens the guide */}
+      <button
+        className="help-fab"
+        onClick={() => setShowHelp(true)}
+        title="What is MyBoard? (help)"
+        aria-label="Open the MyBoard guide"
+      >
+        ?
+      </button>
 
       {/* Tweaks panel */}
       <TweaksPanel title="Tweaks">

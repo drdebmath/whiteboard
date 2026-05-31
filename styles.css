@@ -1713,6 +1713,87 @@ html:not(.dark) .academic-select { color-scheme: light; }
 }
 .modal-btn-primary:hover { filter: brightness(1.1); }
 
+/* ── Welcome / help guide ─────────────────────────────────────────────── */
+.modal-welcome { max-width: 520px; }
+.welcome-lede {
+  margin: 0 0 18px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.welcome-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 18px 0 8px;
+}
+.welcome-tabs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.welcome-tab {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--cat);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.welcome-tab-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--cat);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+}
+.welcome-tab-name { font-weight: 600; font-size: 13.5px; color: var(--ink); }
+.welcome-tab-desc { font-size: 12.5px; color: var(--muted); }
+.welcome-points { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 7px; }
+.welcome-points li { font-size: 13px; line-height: 1.55; color: var(--ink-2); }
+.welcome-points kbd {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.welcome-gear { font-size: 13px; }
+
+/* ── Help FAB (sits beside the settings gear) ─────────────────────────── */
+.help-fab {
+  position: fixed;
+  bottom: 20px;
+  right: 68px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(22, 22, 30, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #a78bfa;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 99998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.help-fab:hover { color: #c4b5fd; border-color: rgba(255, 255, 255, 0.18); }
+
 /* ── Goals ────────────────────────────────────────────────────────────── */
 .goal-list {
   list-style: none;
