@@ -181,31 +181,44 @@ const AdviseesPanel = memo(function AdviseesPanel({ items = [], onChange }) {
 
 /* ─── SubmissionsPanel ─── */
 
-const SUB_STAGES = ["drafting", "submitted", "under review", "revision", "accepted", "rejected"];
-const SUB_STAGE_LABEL = { drafting: "Drafting", submitted: "Submitted", "under review": "Under review", revision: "Revision", accepted: "Accepted", rejected: "Rejected" };
+const SUB_STAGES = ["drafting", "submitted", "under review", "revision", "accepted", "camera ready", "published", "rejected"];
+const SUB_STAGE_LABEL = { drafting: "Drafting", submitted: "Submitted", "under review": "Under review", revision: "Revision", accepted: "Accepted", "camera ready": "Camera ready", published: "Published", rejected: "Rejected" };
 const SUB_STAGE_COLOR = {
   drafting: "oklch(0.62 0.02 270)",
   submitted: "oklch(0.64 0.12 248)",
   "under review": "oklch(0.7 0.13 60)",
   revision: "oklch(0.62 0.13 300)",
   accepted: "oklch(0.64 0.1 155)",
+  "camera ready": "oklch(0.66 0.12 175)",
+  published: "oklch(0.6 0.13 145)",
   rejected: "oklch(0.64 0.14 30)",
 };
 
 const SubmissionsPanel = memo(function SubmissionsPanel({ items = [], onChange }) {
   const [title, setTitle] = useState("");
   const [venue, setVenue] = useState("");
+  const [submitted, setSubmitted] = useState("");
   const [decisionDue, setDecisionDue] = useState("");
+  const [stage, setStage] = useState("drafting");
+  const [editingId, setEditingId] = useState(null);
+
+  const resetForm = () => { setTitle(""); setVenue(""); setSubmitted(""); setDecisionDue(""); setStage("drafting"); setEditingId(null); };
 
   const add = (e) => {
     e.preventDefault();
     const t = title.trim();
     if (!t) return;
-    onChange([...items, { id: uid(), title: t, venue: venue.trim(), stage: "drafting", decisionDue: toTs(decisionDue), link: "", created: Date.now() }]);
-    setTitle(""); setVenue(""); setDecisionDue("");
+    const fields = { title: t, venue: venue.trim(), stage, submitted: toTs(submitted), decisionDue: toTs(decisionDue) };
+    if (editingId) {
+      onChange(items.map((i) => (i.id === editingId ? { ...i, ...fields } : i)));
+    } else {
+      onChange([...items, { id: uid(), ...fields, link: "", created: Date.now() }]);
+    }
+    resetForm();
   };
+  const startEdit = (s) => { setEditingId(s.id); setTitle(s.title || ""); setVenue(s.venue || ""); setStage(s.stage || "drafting"); setSubmitted(dateVal(s.submitted)); setDecisionDue(dateVal(s.decisionDue)); };
   const cycleStage = (id) => onChange(items.map((i) => (i.id === id ? { ...i, stage: SUB_STAGES[(SUB_STAGES.indexOf(i.stage) + 1) % SUB_STAGES.length] } : i)));
-  const remove = (id) => onChange(items.filter((i) => i.id !== id));
+  const remove = (id) => { if (id === editingId) resetForm(); onChange(items.filter((i) => i.id !== id)); };
 
   const order = Object.fromEntries(SUB_STAGES.map((s, i) => [s, i]));
   const sorted = [...items].sort((a, b) => (order[a.stage] ?? 9) - (order[b.stage] ?? 9));
@@ -216,13 +229,18 @@ const SubmissionsPanel = memo(function SubmissionsPanel({ items = [], onChange }
       <form className="academic-form" onSubmit={add}>
         <input className="academic-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Paper title" />
         <input className="academic-input sm" value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Venue" />
-        <DatePicker className="academic-input sm" small value={decisionDue} onChange={setDecisionDue} title="Decision due" />
-        <button type="submit" className="academic-submit">Add</button>
+        <select className="academic-input sm" value={stage} onChange={(e) => setStage(e.target.value)} title="Stage">
+          {SUB_STAGES.map((st) => <option key={st} value={st}>{SUB_STAGE_LABEL[st]}</option>)}
+        </select>
+        <DatePicker className="academic-input sm" small value={submitted} onChange={setSubmitted} title="Submitted on" />
+        <DatePicker className="academic-input sm" small value={decisionDue} onChange={setDecisionDue} title="Notification date" />
+        <button type="submit" className="academic-submit">{editingId ? "Save" : "Add"}</button>
+        {editingId && <button type="button" className="academic-submit" onClick={resetForm}>Cancel</button>}
       </form>
       {!items.length && <div className="panel-empty">No submissions yet</div>}
       <ul className="todo-list reimb-list">
         {sorted.map((s) => {
-          const closed = s.stage === "accepted" || s.stage === "rejected";
+          const closed = s.stage === "accepted" || s.stage === "camera ready" || s.stage === "published" || s.stage === "rejected";
           const showDue = s.decisionDue && !closed;
           const info = dueInfo(s.decisionDue, "decision");
           let cls = "reimb-item";
@@ -236,8 +254,10 @@ const SubmissionsPanel = memo(function SubmissionsPanel({ items = [], onChange }
               <span className="reimb-title">
                 {s.title}
                 {s.venue ? <span className="reimb-party"> · {s.venue}</span> : null}
+                {s.submitted ? <span className="reimb-party"> · submitted {dateVal(s.submitted)}</span> : null}
               </span>
               {showDue && <span className="reimb-due">{info.text}</span>}
+              <EditButton onClick={() => startEdit(s)} />
               <button className="btn-delete" aria-label="Delete" onClick={() => remove(s.id)}>×</button>
             </li>
           );

@@ -717,11 +717,13 @@ html:not(.dark) .datetime-input { color-scheme: light; }
 .teaching-course-head .btn-edit,
 .chore-item .btn-edit,
 .reading-item .btn-edit,
+.reimb-item .btn-edit,
 .service-card .btn-edit { opacity: 0.5; }
 .deadline-row:hover .btn-edit,
 .teaching-course-head:hover .btn-edit,
 .chore-item:hover .btn-edit,
 .reading-item:hover .btn-edit,
+.reimb-item:hover .btn-edit,
 .service-card:hover .btn-edit { opacity: 1; }
 
 /* ── Reminders ────────────────────────────────────────────────────────── */

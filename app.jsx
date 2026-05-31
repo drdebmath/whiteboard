@@ -55,7 +55,7 @@ const DATE_SOURCES = [
   { cat: "academic", kind: "Service", list: (s) => s.academic.service, date: (i) => i.due, text: (i) => i.title || i.text },
   { cat: "research", kind: "Meeting", list: (s) => s.research.students, date: (i) => i.nextMeeting, text: (i) => `${i.name} meeting` },
   { cat: "research", kind: "Milestone", list: (s) => s.research.students, date: (i) => window.soonestMilestone(i), text: (i) => `${i.name} milestone` },
-  { cat: "research", kind: "Submission", list: (s) => s.research.submissions, date: (i) => i.decisionDue, skip: (i) => i.stage === "accepted" || i.stage === "rejected", text: (i) => `${i.title} decision` },
+  { cat: "research", kind: "Submission", list: (s) => s.research.submissions, date: (i) => i.decisionDue, skip: (i) => i.stage === "accepted" || i.stage === "camera ready" || i.stage === "published" || i.stage === "rejected", text: (i) => `${i.title} decision` },
   { cat: "research", kind: "Proposal", list: (s) => s.research.proposals, date: (i) => i.callDeadline, skip: (i) => i.status === "awarded" || i.status === "declined", text: (i) => `${i.title} call` },
   { cat: "research", kind: "CFP", list: (s) => s.research.cfps, date: (i) => window.nextCfpDeadline(i), text: (i) => i.name },
   { cat: "research", kind: "Review", list: (s) => s.research.reviews, date: (i) => i.due, skip: (i) => i.done, text: (i) => `Review ${i.venue}` },
