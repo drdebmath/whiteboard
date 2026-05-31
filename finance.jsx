@@ -275,6 +275,7 @@ const BILL_CADENCES = [
 const CADENCE_LABEL = Object.fromEntries(BILL_CADENCES.map((c) => [c.value, c.label]));
 
 const BillsPanel = memo(function BillsPanel({ items = [], onChange, currency = "₹" }) {
+  const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [cadence, setCadence] = useState("monthly");
@@ -291,6 +292,7 @@ const BillsPanel = memo(function BillsPanel({ items = [], onChange, currency = "
     setAmount("");
     setCadence("monthly");
     setDue("");
+    setShowForm(false);
   };
   const remove = (id) => onChange(items.filter((i) => i.id !== id));
 
@@ -303,16 +305,21 @@ const BillsPanel = memo(function BillsPanel({ items = [], onChange, currency = "
 
   return (
     <div className="panel">
-      <div className="panel-header">Bills &amp; Subscriptions</div>
-      <form className="academic-form" onSubmit={(e) => { e.preventDefault(); add(); }}>
-        <input className="academic-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
-        <input className="academic-input sm" type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
-        <select className="academic-select" value={cadence} onChange={(e) => setCadence(e.target.value)}>
-          {BILL_CADENCES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-        </select>
-        <DatePicker className="academic-input sm" small value={due} onChange={setDue} />
-        <button type="submit" className="academic-submit">Add</button>
-      </form>
+      <div className="panel-header">
+        <span>Bills &amp; Subscriptions</span>
+        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+      </div>
+      {showForm && (
+        <form className="academic-form" onSubmit={(e) => { e.preventDefault(); add(); }}>
+          <input className="academic-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
+          <input className="academic-input sm" type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
+          <select className="academic-select" value={cadence} onChange={(e) => setCadence(e.target.value)}>
+            {BILL_CADENCES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+          <DatePicker className="academic-input sm" small value={due} onChange={setDue} />
+          <button type="submit" className="academic-submit">Add</button>
+        </form>
+      )}
       {!items.length && <div className="panel-empty">No bills yet</div>}
       {items.length > 0 && (
         <div className="fin-summary">
@@ -352,6 +359,7 @@ const REIMB_STATUS_COLOR = {
 };
 
 const ReimbursementPanel = memo(function ReimbursementPanel({ items = [], onChange, currency = "₹" }) {
+  const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [party, setParty] = useState("");
@@ -368,6 +376,7 @@ const ReimbursementPanel = memo(function ReimbursementPanel({ items = [], onChan
     setAmount("");
     setParty("");
     setDue("");
+    setShowForm(false);
   };
   const cycleStatus = (id) =>
     onChange(items.map((i) => (i.id === id ? { ...i, status: REIMB_STATUS[(REIMB_STATUS.indexOf(i.status) + 1) % REIMB_STATUS.length] } : i)));
@@ -379,14 +388,19 @@ const ReimbursementPanel = memo(function ReimbursementPanel({ items = [], onChan
 
   return (
     <div className="panel">
-      <div className="panel-header">Reimbursements &amp; Claims</div>
-      <form className="academic-form" onSubmit={(e) => { e.preventDefault(); add(); }}>
-        <input className="academic-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What for…" />
-        <input className="academic-input sm" type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
-        <input className="academic-input sm" value={party} onChange={(e) => setParty(e.target.value)} placeholder="From" />
-        <DatePicker className="academic-input sm" small value={due} onChange={setDue} title="Due date" />
-        <button type="submit" className="academic-submit">Add</button>
-      </form>
+      <div className="panel-header">
+        <span>Reimbursements &amp; Claims</span>
+        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+      </div>
+      {showForm && (
+        <form className="academic-form" onSubmit={(e) => { e.preventDefault(); add(); }}>
+          <input className="academic-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What for…" />
+          <input className="academic-input sm" type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
+          <input className="academic-input sm" value={party} onChange={(e) => setParty(e.target.value)} placeholder="From" />
+          <DatePicker className="academic-input sm" small value={due} onChange={setDue} title="Due date" />
+          <button type="submit" className="academic-submit">Add</button>
+        </form>
+      )}
       {!items.length && <div className="panel-empty">No claims yet</div>}
       {items.length > 0 && (
         <div className="fin-summary">
@@ -616,6 +630,7 @@ const INVEST_TYPE_COLOR = {
 };
 
 const InvestmentPanel = memo(function InvestmentPanel({ items = [], onChange, currency = "₹" }) {
+  const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [type, setType] = useState(INVEST_TYPES[0]);
   const [invested, setInvested] = useState("");
@@ -629,6 +644,7 @@ const InvestmentPanel = memo(function InvestmentPanel({ items = [], onChange, cu
     setType(INVEST_TYPES[0]);
     setInvested("");
     setValue("");
+    setShowForm(false);
   };
   const update = (id, patch) => onChange(items.map((i) => (i.id === id ? { ...i, ...patch } : i)));
   const remove = (id) => onChange(items.filter((i) => i.id !== id));
@@ -640,16 +656,21 @@ const InvestmentPanel = memo(function InvestmentPanel({ items = [], onChange, cu
 
   return (
     <div className="panel">
-      <div className="panel-header">Investments</div>
-      <form className="academic-form" onSubmit={(e) => { e.preventDefault(); add(); }}>
-        <input className="academic-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Holding" />
-        <select className="academic-select" value={type} onChange={(e) => setType(e.target.value)}>
-          {INVEST_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <input className="academic-input sm" type="number" inputMode="decimal" value={invested} onChange={(e) => setInvested(e.target.value)} placeholder="Invested" />
-        <input className="academic-input sm" type="number" inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} placeholder="Value" />
-        <button type="submit" className="academic-submit">Add</button>
-      </form>
+      <div className="panel-header">
+        <span>Investments</span>
+        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+      </div>
+      {showForm && (
+        <form className="academic-form" onSubmit={(e) => { e.preventDefault(); add(); }}>
+          <input className="academic-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Holding" />
+          <select className="academic-select" value={type} onChange={(e) => setType(e.target.value)}>
+            {INVEST_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <input className="academic-input sm" type="number" inputMode="decimal" value={invested} onChange={(e) => setInvested(e.target.value)} placeholder="Invested" />
+          <input className="academic-input sm" type="number" inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} placeholder="Value" />
+          <button type="submit" className="academic-submit">Add</button>
+        </form>
+      )}
       {!items.length && <div className="panel-empty">No investments yet</div>}
       {items.length > 0 && (
         <div className="fin-summary invest-summary">

@@ -195,6 +195,7 @@ const SUB_STAGE_COLOR = {
 };
 
 const SubmissionsPanel = memo(function SubmissionsPanel({ items = [], onChange }) {
+  const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [venue, setVenue] = useState("");
   const [submitted, setSubmitted] = useState("");
@@ -202,7 +203,7 @@ const SubmissionsPanel = memo(function SubmissionsPanel({ items = [], onChange }
   const [stage, setStage] = useState("drafting");
   const [editingId, setEditingId] = useState(null);
 
-  const resetForm = () => { setTitle(""); setVenue(""); setSubmitted(""); setDecisionDue(""); setStage("drafting"); setEditingId(null); };
+  const resetForm = () => { setTitle(""); setVenue(""); setSubmitted(""); setDecisionDue(""); setStage("drafting"); setEditingId(null); setShowForm(false); };
 
   const add = (e) => {
     e.preventDefault();
@@ -216,7 +217,7 @@ const SubmissionsPanel = memo(function SubmissionsPanel({ items = [], onChange }
     }
     resetForm();
   };
-  const startEdit = (s) => { setEditingId(s.id); setTitle(s.title || ""); setVenue(s.venue || ""); setStage(s.stage || "drafting"); setSubmitted(dateVal(s.submitted)); setDecisionDue(dateVal(s.decisionDue)); };
+  const startEdit = (s) => { setEditingId(s.id); setShowForm(true); setTitle(s.title || ""); setVenue(s.venue || ""); setStage(s.stage || "drafting"); setSubmitted(dateVal(s.submitted)); setDecisionDue(dateVal(s.decisionDue)); };
   const cycleStage = (id) => onChange(items.map((i) => (i.id === id ? { ...i, stage: SUB_STAGES[(SUB_STAGES.indexOf(i.stage) + 1) % SUB_STAGES.length] } : i)));
   const remove = (id) => { if (id === editingId) resetForm(); onChange(items.filter((i) => i.id !== id)); };
 
@@ -225,18 +226,22 @@ const SubmissionsPanel = memo(function SubmissionsPanel({ items = [], onChange }
 
   return (
     <div className="panel">
-      <div className="panel-header">Paper Submissions</div>
-      <form className="academic-form" onSubmit={add}>
-        <input className="academic-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Paper title" />
-        <input className="academic-input sm" value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Venue" />
-        <select className="academic-input sm" value={stage} onChange={(e) => setStage(e.target.value)} title="Stage">
-          {SUB_STAGES.map((st) => <option key={st} value={st}>{SUB_STAGE_LABEL[st]}</option>)}
-        </select>
-        <DatePicker className="academic-input sm" small value={submitted} onChange={setSubmitted} title="Submitted on" />
-        <DatePicker className="academic-input sm" small value={decisionDue} onChange={setDecisionDue} title="Notification date" />
-        <button type="submit" className="academic-submit">{editingId ? "Save" : "Add"}</button>
-        {editingId && <button type="button" className="academic-submit" onClick={resetForm}>Cancel</button>}
-      </form>
+      <div className="panel-header">
+        <span>Paper Submissions</span>
+        <button className="academic-add-btn" onClick={() => (showForm ? resetForm() : setShowForm(true))}>{showForm ? "Cancel" : "+ Add"}</button>
+      </div>
+      {showForm && (
+        <form className="academic-form" onSubmit={add}>
+          <input className="academic-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Paper title" />
+          <input className="academic-input sm" value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Venue" />
+          <select className="academic-input sm" value={stage} onChange={(e) => setStage(e.target.value)} title="Stage">
+            {SUB_STAGES.map((st) => <option key={st} value={st}>{SUB_STAGE_LABEL[st]}</option>)}
+          </select>
+          <DatePicker className="academic-input sm" small value={submitted} onChange={setSubmitted} title="Submitted on" />
+          <DatePicker className="academic-input sm" small value={decisionDue} onChange={setDecisionDue} title="Notification date" />
+          <button type="submit" className="academic-submit">{editingId ? "Save" : "Add"}</button>
+        </form>
+      )}
       {!items.length && <div className="panel-empty">No submissions yet</div>}
       <ul className="todo-list reimb-list">
         {sorted.map((s) => {
@@ -280,6 +285,7 @@ const PROP_STATUS_COLOR = {
 
 const ProposalsPanel = memo(function ProposalsPanel({ items = [], onChange, currency = "₹" }) {
   const { formatMoney } = window.WhiteboardStore;
+  const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [agency, setAgency] = useState("");
   const [amount, setAmount] = useState("");
@@ -290,7 +296,7 @@ const ProposalsPanel = memo(function ProposalsPanel({ items = [], onChange, curr
     const t = title.trim();
     if (!t) return;
     onChange([...items, { id: uid(), title: t, agency: agency.trim(), callDeadline: toTs(callDeadline), amount: num(amount), status: "drafting", created: Date.now() }]);
-    setTitle(""); setAgency(""); setAmount(""); setCallDeadline("");
+    setTitle(""); setAgency(""); setAmount(""); setCallDeadline(""); setShowForm(false);
   };
   const cycleStatus = (id) => onChange(items.map((i) => (i.id === id ? { ...i, status: PROP_STATUS[(PROP_STATUS.indexOf(i.status) + 1) % PROP_STATUS.length] } : i)));
   const remove = (id) => onChange(items.filter((i) => i.id !== id));
@@ -299,14 +305,19 @@ const ProposalsPanel = memo(function ProposalsPanel({ items = [], onChange, curr
 
   return (
     <div className="panel">
-      <div className="panel-header">Grant Proposals</div>
-      <form className="academic-form" onSubmit={add}>
-        <input className="academic-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Proposal title" />
-        <input className="academic-input sm" value={agency} onChange={(e) => setAgency(e.target.value)} placeholder="Agency" />
-        <input className="academic-input sm" type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
-        <DatePicker className="academic-input sm" small value={callDeadline} onChange={setCallDeadline} title="Call deadline" />
-        <button type="submit" className="academic-submit">Add</button>
-      </form>
+      <div className="panel-header">
+        <span>Grant Proposals</span>
+        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+      </div>
+      {showForm && (
+        <form className="academic-form" onSubmit={add}>
+          <input className="academic-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Proposal title" />
+          <input className="academic-input sm" value={agency} onChange={(e) => setAgency(e.target.value)} placeholder="Agency" />
+          <input className="academic-input sm" type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
+          <DatePicker className="academic-input sm" small value={callDeadline} onChange={setCallDeadline} title="Call deadline" />
+          <button type="submit" className="academic-submit">Add</button>
+        </form>
+      )}
       {!items.length && <div className="panel-empty">No proposals yet</div>}
       <ul className="todo-list reimb-list">
         {sorted.map((p) => {
@@ -339,6 +350,7 @@ const ProposalsPanel = memo(function ProposalsPanel({ items = [], onChange, curr
 /* ─── CFPPanel ─── */
 
 const CFPPanel = memo(function CFPPanel({ items = [], onChange }) {
+  const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [abstractDue, setAbstractDue] = useState("");
   const [paperDue, setPaperDue] = useState("");
@@ -348,7 +360,7 @@ const CFPPanel = memo(function CFPPanel({ items = [], onChange }) {
     const n = name.trim();
     if (!n) return;
     onChange([...items, { id: uid(), name: n, abstractDue: toTs(abstractDue), paperDue: toTs(paperDue), notifyDate: null, link: "", created: Date.now() }]);
-    setName(""); setAbstractDue(""); setPaperDue("");
+    setName(""); setAbstractDue(""); setPaperDue(""); setShowForm(false);
   };
   const update = (id, patch) => onChange(items.map((i) => (i.id === id ? { ...i, ...patch } : i)));
   const remove = (id) => onChange(items.filter((i) => i.id !== id));
@@ -357,13 +369,18 @@ const CFPPanel = memo(function CFPPanel({ items = [], onChange }) {
 
   return (
     <div className="panel">
-      <div className="panel-header">Calls for Papers</div>
-      <form className="academic-form" onSubmit={add}>
-        <input className="academic-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Conference / journal" />
-        <DatePicker className="academic-input sm" small value={abstractDue} onChange={setAbstractDue} title="Abstract due" />
-        <DatePicker className="academic-input sm" small value={paperDue} onChange={setPaperDue} title="Paper due" />
-        <button type="submit" className="academic-submit">Add</button>
-      </form>
+      <div className="panel-header">
+        <span>Calls for Papers</span>
+        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+      </div>
+      {showForm && (
+        <form className="academic-form" onSubmit={add}>
+          <input className="academic-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Conference / journal" />
+          <DatePicker className="academic-input sm" small value={abstractDue} onChange={setAbstractDue} title="Abstract due" />
+          <DatePicker className="academic-input sm" small value={paperDue} onChange={setPaperDue} title="Paper due" />
+          <button type="submit" className="academic-submit">Add</button>
+        </form>
+      )}
       {!items.length && <div className="panel-empty">No calls tracked yet</div>}
       <ul className="todo-list reimb-list">
         {sorted.map((c) => {
@@ -390,6 +407,7 @@ const CFPPanel = memo(function CFPPanel({ items = [], onChange }) {
 /* ─── ReviewsPanel ─── */
 
 const ReviewsPanel = memo(function ReviewsPanel({ items = [], onChange }) {
+  const [showForm, setShowForm] = useState(false);
   const [venue, setVenue] = useState("");
   const [paper, setPaper] = useState("");
   const [due, setDue] = useState("");
@@ -399,7 +417,7 @@ const ReviewsPanel = memo(function ReviewsPanel({ items = [], onChange }) {
     const v = venue.trim();
     if (!v) return;
     onChange([...items, { id: uid(), venue: v, paper: paper.trim(), due: toTs(due), done: false, created: Date.now() }]);
-    setVenue(""); setPaper(""); setDue("");
+    setVenue(""); setPaper(""); setDue(""); setShowForm(false);
   };
   const toggle = (id) => onChange(items.map((i) => (i.id === id ? { ...i, done: !i.done } : i)));
   const remove = (id) => onChange(items.filter((i) => i.id !== id));
@@ -408,13 +426,18 @@ const ReviewsPanel = memo(function ReviewsPanel({ items = [], onChange }) {
 
   return (
     <div className="panel">
-      <div className="panel-header">Review Duties</div>
-      <form className="academic-form" onSubmit={add}>
-        <input className="academic-input sm" value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Venue" />
-        <input className="academic-input" value={paper} onChange={(e) => setPaper(e.target.value)} placeholder="Paper / ID" />
-        <DatePicker className="academic-input sm" small value={due} onChange={setDue} title="Due" />
-        <button type="submit" className="academic-submit">Add</button>
-      </form>
+      <div className="panel-header">
+        <span>Review Duties</span>
+        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+      </div>
+      {showForm && (
+        <form className="academic-form" onSubmit={add}>
+          <input className="academic-input sm" value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Venue" />
+          <input className="academic-input" value={paper} onChange={(e) => setPaper(e.target.value)} placeholder="Paper / ID" />
+          <DatePicker className="academic-input sm" small value={due} onChange={setDue} title="Due" />
+          <button type="submit" className="academic-submit">Add</button>
+        </form>
+      )}
       {!items.length && <div className="panel-empty">No reviews pending</div>}
       <ul className="todo-list">
         {sorted.map((r) => {
@@ -441,6 +464,7 @@ const ReviewsPanel = memo(function ReviewsPanel({ items = [], onChange }) {
 /* ─── LettersPanel ─── */
 
 const LettersPanel = memo(function LettersPanel({ items = [], onChange }) {
+  const [showForm, setShowForm] = useState(false);
   const [student, setStudent] = useState("");
   const [purpose, setPurpose] = useState("");
   const [due, setDue] = useState("");
@@ -450,7 +474,7 @@ const LettersPanel = memo(function LettersPanel({ items = [], onChange }) {
     const s = student.trim();
     if (!s) return;
     onChange([...items, { id: uid(), student: s, purpose: purpose.trim(), due: toTs(due), done: false, created: Date.now() }]);
-    setStudent(""); setPurpose(""); setDue("");
+    setStudent(""); setPurpose(""); setDue(""); setShowForm(false);
   };
   const toggle = (id) => onChange(items.map((i) => (i.id === id ? { ...i, done: !i.done } : i)));
   const remove = (id) => onChange(items.filter((i) => i.id !== id));
@@ -459,13 +483,18 @@ const LettersPanel = memo(function LettersPanel({ items = [], onChange }) {
 
   return (
     <div className="panel">
-      <div className="panel-header">Recommendation Letters</div>
-      <form className="academic-form" onSubmit={add}>
-        <input className="academic-input sm" value={student} onChange={(e) => setStudent(e.target.value)} placeholder="For whom" />
-        <input className="academic-input" value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="Purpose / program" />
-        <DatePicker className="academic-input sm" small value={due} onChange={setDue} title="Due" />
-        <button type="submit" className="academic-submit">Add</button>
-      </form>
+      <div className="panel-header">
+        <span>Recommendation Letters</span>
+        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+      </div>
+      {showForm && (
+        <form className="academic-form" onSubmit={add}>
+          <input className="academic-input sm" value={student} onChange={(e) => setStudent(e.target.value)} placeholder="For whom" />
+          <input className="academic-input" value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="Purpose / program" />
+          <DatePicker className="academic-input sm" small value={due} onChange={setDue} title="Due" />
+          <button type="submit" className="academic-submit">Add</button>
+        </form>
+      )}
       {!items.length && <div className="panel-empty">No letters pending</div>}
       <ul className="todo-list">
         {sorted.map((l) => {
@@ -492,6 +521,7 @@ const LettersPanel = memo(function LettersPanel({ items = [], onChange }) {
 /* ─── ContactsPanel ─── */
 
 const ContactsPanel = memo(function ContactsPanel({ items = [], onChange }) {
+  const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [affiliation, setAffiliation] = useState("");
   const [email, setEmail] = useState("");
@@ -501,19 +531,24 @@ const ContactsPanel = memo(function ContactsPanel({ items = [], onChange }) {
     const n = name.trim();
     if (!n) return;
     onChange([...items, { id: uid(), name: n, affiliation: affiliation.trim(), email: email.trim(), note: "", created: Date.now() }]);
-    setName(""); setAffiliation(""); setEmail("");
+    setName(""); setAffiliation(""); setEmail(""); setShowForm(false);
   };
   const remove = (id) => onChange(items.filter((i) => i.id !== id));
 
   return (
     <div className="panel">
-      <div className="panel-header">Collaborators &amp; Contacts</div>
-      <form className="academic-form" onSubmit={add}>
-        <input className="academic-input sm" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
-        <input className="academic-input sm" value={affiliation} onChange={(e) => setAffiliation(e.target.value)} placeholder="Affiliation" />
-        <input className="academic-input sm" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
-        <button type="submit" className="academic-submit">Add</button>
-      </form>
+      <div className="panel-header">
+        <span>Collaborators &amp; Contacts</span>
+        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+      </div>
+      {showForm && (
+        <form className="academic-form" onSubmit={add}>
+          <input className="academic-input sm" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
+          <input className="academic-input sm" value={affiliation} onChange={(e) => setAffiliation(e.target.value)} placeholder="Affiliation" />
+          <input className="academic-input sm" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
+          <button type="submit" className="academic-submit">Add</button>
+        </form>
+      )}
       {!items.length && <div className="panel-empty">No contacts yet</div>}
       <ul className="todo-list">
         {items.map((c) => (
