@@ -973,20 +973,54 @@ function DatePicker({ value, onChange, className = "", title, placeholder = "Pic
   const parsed = parseDateStr(value);
   const today = new Date();
   const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState(null);
   const [viewYear, setViewYear]   = useState(parsed?.year  ?? today.getFullYear());
   const [viewMonth, setViewMonth] = useState(parsed?.month ?? today.getMonth());
   const wrapRef = useRef(null);
+  const popRef = useRef(null);
 
   // Keep view in sync when value changes externally
   useEffect(() => {
     if (parsed) { setViewYear(parsed.year); setViewMonth(parsed.month); }
   }, [value]);
 
-  // Close on outside click or Escape
+  // The popover is portaled to <body> (so it escapes every panel's stacking
+  // context and overflow), then positioned with fixed coords from the trigger.
+  // Flip above the trigger if it would overflow the bottom of the viewport.
+  const POP_W = 240, POP_H = 290;
+  function place() {
+    const el = wrapRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    let left = r.left;
+    if (left + POP_W > window.innerWidth - 8) left = window.innerWidth - POP_W - 8;
+    if (left < 8) left = 8;
+    const below = r.bottom + 6;
+    const flip = below + POP_H > window.innerHeight - 8 && r.top - POP_H - 6 > 8;
+    const top = flip ? r.top - POP_H - 6 : below;
+    setCoords({ top, left });
+  }
+
+  // Position when opening, and keep it pinned to the trigger on scroll/resize.
+  useEffect(() => {
+    if (!open) return;
+    place();
+    function onMove() { place(); }
+    window.addEventListener("scroll", onMove, true);
+    window.addEventListener("resize", onMove);
+    return () => {
+      window.removeEventListener("scroll", onMove, true);
+      window.removeEventListener("resize", onMove);
+    };
+  }, [open]);
+
+  // Close on outside click or Escape (popover lives in a portal, so check it too)
   useEffect(() => {
     if (!open) return;
     function handler(e) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+      if (wrapRef.current && wrapRef.current.contains(e.target)) return;
+      if (popRef.current && popRef.current.contains(e.target)) return;
+      setOpen(false);
     }
     function esc(e) { if (e.key === "Escape") setOpen(false); }
     document.addEventListener("pointerdown", handler);
@@ -1053,8 +1087,12 @@ function DatePicker({ value, onChange, className = "", title, placeholder = "Pic
         )}
       </button>
 
-      {open && (
-        <div className="dp-popover">
+      {open && coords && ReactDOM.createPortal(
+        <div
+          ref={popRef}
+          className="dp-popover"
+          style={{ top: coords.top, left: coords.left }}
+        >
           <div className="dp-header">
             <button type="button" className="dp-nav" onClick={prevMonth}>‹</button>
             <span className="dp-month-label">{MONTH_NAMES[viewMonth]} {viewYear}</span>
@@ -1079,7 +1117,8 @@ function DatePicker({ value, onChange, className = "", title, placeholder = "Pic
               );
             })}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

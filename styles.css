@@ -1842,10 +1842,8 @@ html:not(.dark) .academic-select { color-scheme: light; }
 
 /* popover card */
 .dp-popover {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 500;
+  position: fixed;
+  z-index: 9999;
   width: 240px;
   background: var(--surface);
   border: 1px solid var(--line);
