@@ -37,9 +37,17 @@ Commit directly to `main` — do **not** create feature branches. When asked to 
 - **`finance.jsx`** — finance panels (`GrantPanel`, `BillsPanel`, `ReimbursementPanel`, `LoanPanel`, `SavingsPanel`, `InvestmentPanel`), `{ items, onChange, currency }` contract. `LoanPanel` tracks debts (`loan{name,lender,principal,outstanding,rate,emi,due}`) with a principal-paid progress bar and next-payment date (overdue/soon styled). Reuses progress-bar/cadence/chip patterns; bills feed the upcoming banners. Reimbursement claims carry an optional `due` date (overdue/soon styled, hidden once received). `GrantPanel` manages research grants as expandable cards (`grant{title,total,advance,expiry,heads[{name,amount,spent}]}`): each tracks total grant, advance taken, end date (expired/soon styled), and money allocated + spent per budget head (Travel, Contingency, Equipment, …), with a spent/allocated progress bar per head. Grant spending = sum of per-head `spent` (advance is informational only); remaining = total − spending.
 - **`travel.jsx`** — travel panels (`TripAlerts` action cards, `TripsPanel` expandable cards, `PackingPanel`, `WishlistPanel`, `DocumentsPanel`). Trip starts and document expiries feed the upcoming banners. `PackingPanel` takes `{ items, trips, onChange }`: each packing item carries a `tripId`, and a dropdown scopes the list to one trip — the dropdown lists only current/future trips (end/start today or later), per the forward-looking philosophy.
 - **`tweaks-panel.jsx`** — a dev/design tweak UI (sliders, toggles, selects) toggled by keyboard; persists tweak values to localStorage. Injects its own CSS via `__TWEAKS_STYLE`.
-- **`styles.css`** — all styling (large, hand-written, oklch color space).
+- **`styles.css`** — all styling (large, hand-written, oklch color space). All responsive behaviour lives in **one** `@media (max-width: 900px)` block near the end (the "Small screens" section) — do not scatter per-tab media queries.
 
 Cross-file calls happen via `window` (e.g. `window.formatWhen`, `window.relTime`, `window.__toggleTweaksPanel`). Shared UI primitives (`Chip`, `TaskList`, `EditButton`, `AutoTextarea`) and helpers (`safeHref` on `WhiteboardStore`) are likewise attached to `window` and reused across tabs. When you need a function across files, attach it to `window` in the defining file.
+
+## Mobile / small screens
+
+The app also ships as a native iOS `WKWebView` that renders these exact files, so "mobile" is not a second codebase — it is the single `@media (max-width: 900px)` block in `styles.css`. The design contract (full detail in **DESIGN.md §8**): below 900px every layout collapses to **one column at 90vw** (5vw side gutters), the tab bar becomes a **fixed icon-only bottom bar**, and all other chrome (search, data actions, help, tweaks) moves into a **right-hand hamburger drawer**. The invariant to preserve: at a 390px viewport `document.documentElement.scrollWidth === clientWidth` on every tab (no horizontal scroll).
+
+Two recurring overflow traps when adding panels: (1) **grid** panel children need `min-width: 0` or a long title forces the track wider than the viewport (the Academic tab is the only grid); (2) a flex row pairing a flexible label with a fixed trailing control must let the label **shrink/wrap** (`min-width: 0` + `overflow-wrap` or `flex-wrap: wrap` on the row), or long user text shoves the control off-screen. Internal multi-column grids inside a panel must collapse to one column too.
+
+The iOS app picks up any CSS/JSX change automatically via its "Copy Web Assets" build phase — **no Swift change is needed** for a styling/layout fix; just rebuild the iOS target.
 
 ## Data & privacy
 

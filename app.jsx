@@ -218,6 +218,33 @@ function Clock({ now }) {
   );
 }
 
+// ─── Tab icons ───
+// Minimal 24×24 line icons drawn in currentColor so the tab bar reads
+// iconographically while staying monochrome-with-accent — no emoji, no
+// icon-font dependency (keeps the no-build, offline-first contract).
+function TabIcon({ id }) {
+  const p = {
+    className: "tab-icon", viewBox: "0 0 24 24", fill: "none",
+    stroke: "currentColor", strokeWidth: 1.7,
+    strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true,
+  };
+  switch (id) {
+    case "academic": // mortarboard
+      return (<svg {...p}><path d="M3 8.5 12 5l9 3.5-9 3.5z" /><path d="M7 10.6V15c0 1 2.2 2.2 5 2.2s5-1.2 5-2.2v-4.4" /><path d="M21 8.5V13" /></svg>);
+    case "research": // conical flask
+      return (<svg {...p}><path d="M9 3h6" /><path d="M10 3v5.6L5.6 16.6A2 2 0 0 0 7.4 19.6h9.2a2 2 0 0 0 1.8-3L14 8.6V3" /><path d="M8 14h8" /></svg>);
+    case "household": // home
+      return (<svg {...p}><path d="M4 11 12 5l8 6" /><path d="M6 10v9h12v-9" /><path d="M10 19v-5h4v5" /></svg>);
+    case "health": // heart
+      return (<svg {...p}><path d="M12 19.5C7 16 4 12.8 4 9.6A3.4 3.4 0 0 1 12 7a3.4 3.4 0 0 1 8 2.6c0 3.2-3 6.4-8 9.9z" /></svg>);
+    case "finance": // banknote
+      return (<svg {...p}><rect x="2.5" y="6.5" width="19" height="11" rx="2" /><circle cx="12" cy="12" r="2.5" /></svg>);
+    case "travel": // suitcase
+      return (<svg {...p}><rect x="3.5" y="7.5" width="17" height="12" rx="2" /><path d="M8.5 7.5V6a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v1.5" /><path d="M12 7.5v12" /></svg>);
+    default: return null;
+  }
+}
+
 // ─── At-a-glance stats ───
 
 function computeStats(state, now) {
@@ -493,6 +520,14 @@ function App() {
   const [showIntro, setShowIntro] = useState(() => !getIntroSeen());
   const [showHelp, setShowHelp] = useState(false);
   const [showName, setShowName] = useState(() => getIntroSeen() && !profileName);
+  // Mobile-only slide-out menu (search + sync actions + help/tweaks). On desktop
+  // these live in the top bar / footer / FABs; the drawer is hidden there.
+  const [menuOpen, setMenuOpen] = useState(false);
+  // Lock background scroll while the drawer is open.
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [menuOpen]);
 
   const fileInputRef = useRef(null);
   const searchRef = useRef(null);
@@ -1138,10 +1173,32 @@ function App() {
         ? "soon"
         : "calm";
 
+  // Data/sync actions, defined once and rendered in two places: the desktop
+  // footer pill bar and the mobile slide-out menu.
+  const menuActions = [
+    { key: "export", label: "Export", title: "Export JSON", onClick: handleExport },
+    { key: "import", label: "Import", title: "Import JSON", onClick: triggerImport },
+    { key: "calendar", label: "Calendar", title: "Export upcoming dates as .ics", onClick: handleIcsExport },
+    { key: "undo", label: "Undo", title: "Undo (Ctrl+Z)", onClick: handleUndo },
+    { key: "gist", label: "Gist", title: "Setup Gist sync", onClick: () => setShowSetup(true) },
+    { key: "name", label: "Name", title: "Set your name", onClick: () => setShowName(true) },
+  ];
+
   return (
     <div className={`app ${isDark ? "dark" : "light"}`}>
       {/* Header */}
       <header className="app-header">
+        {/* Mobile-only menu trigger (top-right); opens the slide-out drawer. */}
+        <button
+          className="menu-fab"
+          onClick={() => setMenuOpen(true)}
+          aria-label="Open menu"
+          aria-expanded={menuOpen}
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+        </button>
         <div className="header-left">
           <h1 className="greeting">
             {greeting}{displayName ? <>{", "}<span className="greeting-name">{displayName}</span></> : ""}
@@ -1215,6 +1272,8 @@ function App() {
               tabIndex={selected ? 0 : -1}
               className={`tab-btn ${selected ? "active" : ""}`}
               onClick={() => setTab(c.id)}
+              title={c.label}
+              aria-label={c.label}
               onKeyDown={(e) => {
                 if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
                 e.preventDefault();
@@ -1225,12 +1284,8 @@ function App() {
               }}
               style={selected ? { borderBottomColor: c.accent, color: c.accent } : {}}
             >
-              <span className="tab-number">{i + 1}</span>
-              {c.label}
-              <span
-                className="tab-dot"
-                style={{ background: selected ? c.accent : "transparent" }}
-              />
+              <TabIcon id={c.id} />
+              <span className="tab-label">{c.label}</span>
             </button>
           );
         })}
@@ -1259,39 +1314,90 @@ function App() {
         {searchQuery.trim() ? renderSearchResults() : renderPanels(tab)}
       </main>
 
-      {/* Sync bar */}
+      {/* Sync bar (desktop; on mobile these actions live in the menu drawer) */}
       <footer className="sync-bar">
-        <button className="sync-btn" onClick={handleExport} title="Export JSON">
-          Export
-        </button>
-        <button className="sync-btn" onClick={triggerImport} title="Import JSON">
-          Import
-        </button>
-        <button className="sync-btn" onClick={handleIcsExport} title="Export upcoming dates as .ics">
-          Calendar
-        </button>
-        <button className="sync-btn" onClick={handleUndo} title="Undo (Ctrl+Z)">
-          Undo
-        </button>
-        <button className="sync-btn" onClick={() => setShowSetup(true)} title="Setup Gist sync">
-          Gist
-        </button>
-        <button className="sync-btn" onClick={() => setShowName(true)} title="Set your name">
-          Name
-        </button>
+        {menuActions.map((a) => (
+          <button key={a.key} className="sync-btn" onClick={a.onClick} title={a.title}>
+            {a.label}
+          </button>
+        ))}
         {hasSyncConfig(syncConfig) && (
           <button className="sync-btn sync-btn-primary" onClick={handleSync} title="Push to Gist">
             Sync Now
           </button>
         )}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          style={{ display: "none" }}
-          onChange={handleImport}
-        />
       </footer>
+
+      {/* Hidden import target — kept outside the footer so it still works when
+          the footer is hidden on mobile (the file dialog is opened from the menu). */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        style={{ display: "none" }}
+        onChange={handleImport}
+      />
+
+      {/* Mobile menu — slides in from the right with search + sync actions +
+          help/tweaks. Hidden on desktop, where those live in the top bar/FABs. */}
+      <div
+        className={`menu-overlay${menuOpen ? " open" : ""}`}
+        onClick={() => setMenuOpen(false)}
+      />
+      <aside className={`menu-drawer${menuOpen ? " open" : ""}`} aria-hidden={!menuOpen}>
+        <div className="menu-drawer-head">
+          <span className="menu-drawer-title">Menu</span>
+          <button className="menu-close" onClick={() => setMenuOpen(false)} aria-label="Close menu">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+        <label className="menu-search">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" />
+          </svg>
+          <input
+            type="text"
+            className="menu-search-input"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") setMenuOpen(false); }}
+            placeholder="Search…"
+          />
+        </label>
+        <div className="menu-actions">
+          {menuActions.map((a) => (
+            <button
+              key={a.key}
+              className="menu-action"
+              onClick={() => { a.onClick(); setMenuOpen(false); }}
+            >
+              {a.label}
+            </button>
+          ))}
+          {hasSyncConfig(syncConfig) && (
+            <button
+              className="menu-action menu-action-primary"
+              onClick={() => { handleSync(); setMenuOpen(false); }}
+            >
+              Sync Now
+            </button>
+          )}
+          <button
+            className="menu-action"
+            onClick={() => { setMenuOpen(false); setShowHelp(true); }}
+          >
+            Help &amp; guide
+          </button>
+          <button
+            className="menu-action"
+            onClick={() => { setMenuOpen(false); window.__toggleTweaksPanel?.(); }}
+          >
+            Tweaks
+          </button>
+        </div>
+      </aside>
 
       {/* Keyboard hints */}
       <div className="keyboard-hints">

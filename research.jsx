@@ -159,7 +159,7 @@ const AdviseesPanel = memo(function AdviseesPanel({ items = [], onChange }) {
     <div className="panel">
       <div className="panel-header">
         <span>Advisees</span>
-        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+        <button className="academic-add-btn" aria-label={showForm ? "Cancel" : "Add"} onClick={() => setShowForm(!showForm)}>{showForm ? "×" : "+"}</button>
       </div>
       {showForm && (
         <form className="academic-form" onSubmit={add}>
@@ -247,7 +247,7 @@ const SubmissionsPanel = memo(function SubmissionsPanel({ items = [], onChange }
     <div className="panel">
       <div className="panel-header">
         <span>Paper Submissions</span>
-        <button className="academic-add-btn" onClick={() => (showForm ? resetForm() : setShowForm(true))}>{showForm ? "Cancel" : "+ Add"}</button>
+        <button className="academic-add-btn" aria-label={showForm ? "Cancel" : "Add"} onClick={() => (showForm ? resetForm() : setShowForm(true))}>{showForm ? "×" : "+"}</button>
       </div>
       {showForm && (
         <form className="academic-form" onSubmit={add}>
@@ -326,7 +326,7 @@ const ProposalsPanel = memo(function ProposalsPanel({ items = [], onChange, curr
     <div className="panel">
       <div className="panel-header">
         <span>Grant Proposals</span>
-        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+        <button className="academic-add-btn" aria-label={showForm ? "Cancel" : "Add"} onClick={() => setShowForm(!showForm)}>{showForm ? "×" : "+"}</button>
       </div>
       {showForm && (
         <form className="academic-form" onSubmit={add}>
@@ -390,7 +390,7 @@ const CFPPanel = memo(function CFPPanel({ items = [], onChange }) {
     <div className="panel">
       <div className="panel-header">
         <span>Calls for Papers</span>
-        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+        <button className="academic-add-btn" aria-label={showForm ? "Cancel" : "Add"} onClick={() => setShowForm(!showForm)}>{showForm ? "×" : "+"}</button>
       </div>
       {showForm && (
         <form className="academic-form" onSubmit={add}>
@@ -447,7 +447,7 @@ const ReviewsPanel = memo(function ReviewsPanel({ items = [], onChange }) {
     <div className="panel">
       <div className="panel-header">
         <span>Review Duties</span>
-        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+        <button className="academic-add-btn" aria-label={showForm ? "Cancel" : "Add"} onClick={() => setShowForm(!showForm)}>{showForm ? "×" : "+"}</button>
       </div>
       {showForm && (
         <form className="academic-form" onSubmit={add}>
@@ -504,7 +504,7 @@ const LettersPanel = memo(function LettersPanel({ items = [], onChange }) {
     <div className="panel">
       <div className="panel-header">
         <span>Recommendation Letters</span>
-        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+        <button className="academic-add-btn" aria-label={showForm ? "Cancel" : "Add"} onClick={() => setShowForm(!showForm)}>{showForm ? "×" : "+"}</button>
       </div>
       {showForm && (
         <form className="academic-form" onSubmit={add}>
@@ -568,7 +568,7 @@ const ContactsPanel = memo(function ContactsPanel({ items = [], onChange }) {
     <div className="panel">
       <div className="panel-header">
         <span>Collaborators &amp; Contacts</span>
-        <button className="academic-add-btn" onClick={() => (showForm ? resetForm() : setShowForm(true))}>{showForm ? "Cancel" : "+ Add"}</button>
+        <button className="academic-add-btn" aria-label={showForm ? "Cancel" : "Add"} onClick={() => (showForm ? resetForm() : setShowForm(true))}>{showForm ? "×" : "+"}</button>
       </div>
       {showForm && (
         <form className="academic-form" onSubmit={add}>
@@ -642,7 +642,7 @@ const TimetablePanel = memo(function TimetablePanel({ items = [], onChange }) {
     <div className="panel">
       <div className="panel-header">
         <span>Weekly Timetable</span>
-        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+        <button className="academic-add-btn" aria-label={showForm ? "Cancel" : "Add"} onClick={() => setShowForm(!showForm)}>{showForm ? "×" : "+"}</button>
       </div>
       {showForm && (
         <form className="academic-form" onSubmit={add}>

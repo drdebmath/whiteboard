@@ -239,7 +239,7 @@ const TripsPanel = memo(function TripsPanel({ items = [], onChange }) {
     <div className="panel">
       <div className="panel-header">
         <span>Trips</span>
-        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+        <button className="academic-add-btn" aria-label={showForm ? "Cancel" : "Add"} onClick={() => setShowForm(!showForm)}>{showForm ? "×" : "+"}</button>
       </div>
       {showForm && (
         <form className="academic-form" onSubmit={addTrip}>
@@ -373,7 +373,7 @@ const WishlistPanel = memo(function WishlistPanel({ items = [], onChange }) {
     <div className="panel">
       <div className="panel-header">
         <span>Travel Wishlist</span>
-        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+        <button className="academic-add-btn" aria-label={showForm ? "Cancel" : "Add"} onClick={() => setShowForm(!showForm)}>{showForm ? "×" : "+"}</button>
       </div>
       {showForm && (
         <div className="todo-input-row">
@@ -461,7 +461,7 @@ const DocumentsPanel = memo(function DocumentsPanel({ items = [], onChange }) {
     <div className="panel">
       <div className="panel-header">
         <span>Documents</span>
-        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add"}</button>
+        <button className="academic-add-btn" aria-label={showForm ? "Cancel" : "Add"} onClick={() => setShowForm(!showForm)}>{showForm ? "×" : "+"}</button>
       </div>
       {showForm && (
         <form className="academic-form" onSubmit={add}>

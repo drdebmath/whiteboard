@@ -99,10 +99,17 @@ them.
   historical class names (`deadline-due`, `grant-due`, `bill-due`, `reimb-due`,
   `doc-expiry`, `service-due`, `reminder-time`, `trip-range`) now share **one base
   definition + two urgency groups** (the "Meta-when" block in `styles.css`). New
-  dated panels reuse these hooks rather than coin a ninth.
+  dated panels reuse these hooks rather than coin a ninth. Because the stamp is
+  `nowrap`, pair it with a wrappable title inside a single flex-wrap block (e.g.
+  `.deadline-body`: title `flex: 1 1 8ch`, stamp `flex-shrink:0`) so the two sit
+  side by side when there's room and the stamp drops to its own line when the row
+  is narrow — never let a fixed stamp squeeze the title to a one-char sliver.
 - **Reveal-on-hover affordance** — destructive/secondary controls (`.btn-delete`,
   `.btn-edit`) sit at `opacity:0` (or 0.5 on dense rows) and surface on row hover.
-  The resting row stays quiet; tools appear when you reach for them.
+  The resting row stays quiet; tools appear when you reach for them. **A phone has
+  no hover**, so these would be invisible and unreachable on touch — the mobile
+  block forces them back to `opacity:1`. Hover-to-reveal is a desktop garnish, never
+  the only way to reach an action.
 
 ---
 
@@ -114,7 +121,7 @@ already follows this; keep it that way.
 - **Light items** (a line of text, maybe a date) → an **always-visible add row**
   (`.todo-input-row`): input + `+`. One line, low chrome. (Reminders, shopping,
   habits, packing, wishlist, savings, grant heads do this — keep it.)
-- **Structured items** (3+ fields) → a **collapsed `+ Add` toggle** that reveals
+- **Structured items** (3+ fields) → a **collapsed `+` toggle** that reveals
   the form (`.academic-form`) only when adding, then closes again. Deadlines,
   Teaching, Service, Trips, Loans, Grants, Advisees, Timetable, Submissions,
   Proposals, CFP, Reviews, Letters, Bills, Reimbursements, Investments,
@@ -125,9 +132,12 @@ already follows this; keep it that way.
   source of visual noise; it has been paid down, so any new panel that reopens it
   is a regression, not a style choice.
 
-Buttons that trigger the doorway are also unified: the pill `+ Add`
-(`.academic-add-btn`) for the toggle form; the 24px square `+`
-(`.btn-add-inline`) only for the always-on light add. Don't mix per panel.
+Both doorways wear the **same 24px square `+` icon** so every panel's add
+affordance reads identically — the difference is behaviour, not appearance. The
+toggle form's button (`.academic-add-btn`) flips its glyph to `×` while the form
+is open (a close affordance); the always-on light add uses `.btn-add-inline`.
+Never spell the action out as text (`+ Add`, `Add item`): the `+` is the doorway
+everywhere. Don't mix the two doorways within one panel.
 
 ---
 
@@ -184,3 +194,145 @@ CSS transitions — route motion through CSS so this switch keeps covering it.
 6. Tokens only — survives light/dark and any hue.
 7. Does it surface the future and let the done fade (`done`/`achieved`/`received`
    states dim and drop in sort order), per the project philosophy?
+8. Will it collapse cleanly to one column on a phone? No fixed multi-column
+   layout, no horizontal scroll, no list that traps a nested scroll — see §8.
+9. Did you check **every state**, not just the resting one? A row has at least a
+   *display*, an *edit*, and an *add* viewpoint (sometimes *empty* and *done* too),
+   and each is a different DOM with a different width budget. The edit/add form is
+   the usual culprit: a select + input + date picker + buttons that reads fine
+   inline on desktop is a guaranteed overflow on a narrow card — stack it (§8).
+
+---
+
+## 8. Small screens
+
+The board is a multi-column desktop instrument, but it ships as a phone app too
+(the iOS target is a `WKWebView` rendering these exact files). On a phone none of
+the desktop column math survives — two columns at 390px are two cramped strips —
+and the forward-looking philosophy gives the answer: on a small screen you attend
+to **one panel at a time, top to bottom**. So the small-screen language is
+deliberately tiny: *one column, generously sized, scrolled as a single page.*
+
+**There is exactly one breakpoint, and it lives in one place** — the
+"Small screens" block near the end of `styles.css`. Do not scatter per-tab
+`@media` rules through the file; every tab reflows through this one rule so the
+behaviour is identical whether you're on Academic's grid, Finance's flex columns,
+or Research's anchored sub-columns. This single block is also what the iOS app
+renders, so "the mobile design" is not a second codebase — it is these rules.
+
+**Below 900px the whole desktop layout gives way at once** — both the
+multi-column panels *and* the horizontal top chrome (the six-tab bar plus its
+right-aligned search). They share the breakpoint on purpose: the width at which
+two columns stop fitting is the same width at which the tab bar stops fitting, so
+an earlier attempt that split them into two tiers (panels at 980, chrome at 600)
+only opened a dead zone in between where the columns had collapsed but the tab
+bar still ran off the screen. One number, no dead zone.
+
+The mobile layout keeps two promises, both verified:
+
+- **One column.** Every layout collapses to a single column — Academic's 2-col
+  grid becomes `1fr`, the flex tabs (Household, Health, Finance, Travel) go
+  `flex-direction: column` *with `align-items: stretch`* so the stacked columns
+  fill the width (without `stretch` the inherited `flex-start` shrinks each panel
+  to its content), and Research's sub-columns stack. One panel per row, in source
+  order. The two-column *balance caps* (lists that scroll inside their panel so
+  one tall column doesn't tower over its neighbour) are **released** — with no
+  neighbour to balance, a capped list would only trap a nested scroll, so the
+  list grows and the whole page scrolls as one.
+
+- **90% of the viewport.** The app gets `5vw` side gutters, so every panel spans
+  exactly `90vw` with an even margin either side. The chrome goes compact to
+  match: the header stacks and left-aligns both halves (the right half stretches
+  to full width so the serif greeting *wraps* instead of overflowing, and its
+  date/stats — normally right-aligned — left-align so they don't float oddly once
+  stacked); the greeting and the clock/date step down so the time stops rivalling
+  the greeting.
+
+**The tab bar is iconographic everywhere; on a phone it moves to the bottom.**
+Each tab leads with a minimal `currentColor` line icon (inline SVG — never emoji
+or an icon font, so the board stays monochrome-with-accent and fully offline)
+that accent-tints when active, matching the status/identity color rules. On
+desktop the bar is sticky at the *top* under the greeting, icon **+ label**, with
+search on its right. On a phone the bar becomes a **fixed bottom bar** — six
+evenly-spread, icon-only buttons (active = the tinted icon, no border), always on
+screen so navigation never scrolls away (an earlier sticky-top attempt let the
+icons scroll off while only the search stayed pinned — the bottom bar removes the
+whole class of bug). The page reserves bottom padding (plus
+`env(safe-area-inset-bottom)`) so nothing hides behind it.
+
+Two non-obvious rules keep that bottom bar honest, both learned the hard way:
+the mobile bar uses an **opaque** background (`--surface`), *not* the frosted
+`backdrop-filter` the desktop sticky bar uses — `backdrop-filter` on a
+`position: fixed` element is an iOS WebKit bug that detaches it so it scrolls with
+the page. And `overscroll-behavior-y: none` on `html, body` stops a rubber-band
+bounce from dragging the fixed bar with it. Relatedly, the Projects panel's
+two-column card grid (`.projects-list`) is forced to **one column** on mobile:
+two `260px`-min tracks can't fit a single ~90vw panel, so on a phone the cards
+would otherwise squeeze and spill. Any panel with an internal multi-column grid
+must do the same.
+
+**The single-column promise has a second, sneakier failure mode: a panel that is
+itself wider than the column.** Academic is the one tab whose panels live in a CSS
+*grid* (the others are flex), and a grid item defaults to `min-width: auto` — it
+*refuses to shrink below its content's intrinsic width*. So a long deadline or
+course title sized the `1fr` track to the title's width (~640px) and every panel
+on the tab inherited that track, blowing the whole page past `90vw`. The fix is
+`min-width: 0` on the grid child (`.panels-academic > .panel`), which lets the
+track collapse back to the viewport. Inside a panel the same rule applies to flex
+rows: a row that pairs a flexible label with a fixed-size trailing control (e.g.
+Teaching's course pill + done/percent count) must let the label **shrink or wrap**
+— give it `min-width: 0` / `overflow-wrap: anywhere`, or `flex-wrap: wrap` the row
+— or the un-shrinkable label shoves the trailing control off the right edge. Long
+free text from the user is the normal case here, not an edge case; design every
+label that can hold a sentence to wrap.
+
+**Everything else collapses into one right-hand drawer.** On a phone there is no
+inline search, no FABs, no footer toolbar; a single hamburger pins to the header's
+top-right and opens a drawer that **slides in from the right** over a dimmed,
+scroll-locked board. The drawer holds search, the data actions (Export, Import,
+Calendar, Undo, Gist, Name, Sync Now) and Help / Tweaks. Those actions are
+declared once in `app.jsx` and rendered in both the desktop footer and the drawer,
+so the two never drift. The drawer, overlay and hamburger exist at every size but
+only surface on mobile (the hamburger is `display:none` on desktop, so the drawer
+simply rests off-screen) — and because a media query adds no specificity, their
+base rules sit *before* the Small-screens block so its `display:` overrides win on
+source order. Desktop keeps its familiar chrome: top search, the matched help `?`
+/ Tweaks `⚙` launcher pair (bottom-right), and the footer pill bar. The
+attribution credits are in normal flow at the foot of the page at every size
+(they used to be `position:fixed` and collided with the bottom-right launchers).
+
+**Expanded cards reflow row-by-row, not just panel-by-panel.** Collapsing the
+*panels* to one column is only half the job — the detail rows *inside* an
+expanded card (a grant's budget heads, a savings/loan figure row, a trip's
+start→end date pickers) pair a flexible text label with one or more *fixed-width*
+controls (money inputs, date pickers). On a desktop half-panel they read as a
+tidy single line; at 90vw the controls refuse to shrink and crush the label to a
+**one-character-per-line vertical sliver** ("Travel" stacked `T·r·a·v·e·l`). The
+rule: any such row **stacks on mobile** — the label takes its own line and the
+controls drop to the next, *flexing* (`flex:1; width:auto; min-width:0`) to share
+the width rather than holding a fixed px. Paired pickers stack outright (the `→`
+turns to point down). And when a row of small buttons can wrap, group them
+(`.chore-actions`) and pin the group right so a lone button never orphans onto a
+line by itself. The same principle as the title/stamp reflow in §3 — *use more
+vertical lines; never let a fixed-width sibling win a width fight against text.*
+
+**Inline editors are the sharpest case, and they always stack.** Tapping edit on a
+row swaps it for a form — a select + text input + date picker + Save/Cancel. Laid
+out as a flex row those overflow even a desktop half-panel, let alone 90vw, so the
+editor is **never** a row: it's a full-width stacked column (`.row-edit` /
+`.service-card-edit` — `flex-direction: column`, fields `width:100%`, actions
+right-aligned beneath), at *every* viewport, not behind a media query. A sibling
+checkbox can stay to its left (the editor fills the rest via `flex:1`); everything
+else — chip, the row's own edit/delete — belongs to the *display* branch and
+should not render while editing. New panels with inline edit reuse `.row-edit`.
+
+When you add a panel or a tab, you get all of this for free **as long as** you
+build on the standard layout containers (`.panels-*`, `.panels-col`) and the
+shared patterns — nothing in a panel should set its own width, a fixed column
+count, or its own breakpoint. If a new element overflows `90vw` on a phone (a
+wide table, a long unbroken token, a fixed-width control, a nowrap flex row of
+buttons), that is the bug to fix; the single-column 90% promise is not negotiable
+real estate. The quick test: at 390px viewport, `document.documentElement`'s
+`scrollWidth` must equal its `clientWidth` (no horizontal scroll) on every tab —
+**with every expandable card opened**, since the worst overflow hides inside the
+detail rows, not the collapsed summary.

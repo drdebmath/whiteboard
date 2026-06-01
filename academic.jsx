@@ -107,8 +107,8 @@ const DeadlinesPanel = memo(function DeadlinesPanel({ items = [], onChange }) {
     <div className="panel">
       <div className="panel-header">
         <span>Deadlines</span>
-        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>
-          {showForm ? "Cancel" : "+ Add"}
+        <button className="academic-add-btn" aria-label={showForm ? "Cancel" : "Add"} onClick={() => setShowForm(!showForm)}>
+          {showForm ? "×" : "+"}
         </button>
       </div>
 
@@ -140,29 +140,33 @@ const DeadlinesPanel = memo(function DeadlinesPanel({ items = [], onChange }) {
             <div key={bucket} className="deadline-bucket">
               <div className="deadline-bucket-title">{bucket}</div>
               {bucketItems.map((item) => (
-                <div key={item.id} data-mb-id={item.id} className={"deadline-row" + (item.done ? " done" : "")} style={{ "--row-accent": KIND_COLORS[item.kind] || "var(--line-2)" }}>
-                  <input type="checkbox" checked={!!item.done} onChange={() => toggleDone(item.id)} aria-label="Mark done" />
-                  <Chip label={item.kind} color={KIND_COLORS[item.kind]} />
+                <div key={item.id} data-mb-id={item.id} className={"deadline-row" + (item.done ? " done" : "") + (editingId === item.id ? " editing" : "")} style={{ "--row-accent": KIND_COLORS[item.kind] || "var(--line-2)" }}>
                   {editingId === item.id ? (
-                    <>
+                    <div className="row-edit">
                       <select className="academic-select" value={editKind} onChange={(e) => setEditKind(e.target.value)}>
                         {DEADLINE_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
                       </select>
-                      <input className="academic-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                      <input className="academic-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Title" />
                       <DatePicker className="academic-input" value={editDate} onChange={setEditDate} placeholder="Due date" />
-                      <button className="panel-text-btn" onClick={() => saveEdit(item.id)}>Save</button>
-                      <button className="panel-text-btn" onClick={() => setEditingId(null)}>Cancel</button>
-                    </>
+                      <div className="row-edit-actions">
+                        <button className="panel-text-btn" onClick={() => saveEdit(item.id)}>Save</button>
+                        <button className="panel-text-btn" onClick={() => setEditingId(null)}>Cancel</button>
+                      </div>
+                    </div>
                   ) : (
                     <>
-                      <span className="deadline-title">{item.title}</span>
-                      <span className="deadline-due">{dueText(item.due)}</span>
-                    </>
-                  )}
-                  {onChange && (
-                    <>
-                      <EditButton onClick={() => startEdit(item)} />
-                      <button className="btn-delete" aria-label="Delete" onClick={() => remove(item.id)}>×</button>
+                      <input type="checkbox" checked={!!item.done} onChange={() => toggleDone(item.id)} aria-label="Mark done" />
+                      <Chip label={item.kind} color={KIND_COLORS[item.kind]} />
+                      <div className="deadline-body">
+                        <span className="deadline-title">{item.title}</span>
+                        <span className="deadline-due">{dueText(item.due)}</span>
+                      </div>
+                      {onChange && (
+                        <>
+                          <EditButton onClick={() => startEdit(item)} />
+                          <button className="btn-delete" aria-label="Delete" onClick={() => remove(item.id)}>×</button>
+                        </>
+                      )}
                     </>
                   )}
                 </div>
@@ -276,8 +280,8 @@ const TeachingPanel = memo(function TeachingPanel({ items = [], onChange }) {
     <div className="panel">
       <div className="panel-header">
         <span>Teaching</span>
-        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>
-          {showForm ? "Cancel" : "+ Add"}
+        <button className="academic-add-btn" aria-label={showForm ? "Cancel" : "Add"} onClick={() => setShowForm(!showForm)}>
+          {showForm ? "×" : "+"}
         </button>
       </div>
 
@@ -405,8 +409,8 @@ const ServicePanel = memo(function ServicePanel({ items = [], onChange }) {
     <div className="panel">
       <div className="panel-header">
         <span>Service</span>
-        <button className="academic-add-btn" onClick={() => setShowForm(!showForm)}>
-          {showForm ? "Cancel" : "+ Add"}
+        <button className="academic-add-btn" aria-label={showForm ? "Cancel" : "Add"} onClick={() => setShowForm(!showForm)}>
+          {showForm ? "×" : "+"}
         </button>
       </div>
 

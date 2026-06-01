@@ -345,23 +345,34 @@ a { color: var(--accent); }
 .next-up-overdue .next-up-time { color: var(--danger); font-weight: 600; }
 
 /* ── Tabs + inline search ─────────────────────────────────────────────── */
+/* The tab bar is sticky: it sits under the greeting at rest and pins to the top
+   of the viewport once you scroll, so navigation is always one tap away. The
+   frosted background covers panel content scrolling beneath it. (It spans the
+   same 90vw column as the panels, so its side gutters are page background — no
+   content leaks past its edges.) */
 .tab-nav {
   display: flex;
   align-items: center;
   gap: 2px;
   border-bottom: 1px solid var(--line);
   margin-bottom: 28px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: color-mix(in oklch, var(--bg) 86%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .tab-btn {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
-  padding: 12px 18px 14px;
-  font-size: 15px;
+  padding: 11px 16px 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--muted);
   cursor: pointer;
@@ -369,26 +380,9 @@ a { color: var(--accent); }
 }
 .tab-btn:hover { color: var(--ink-2); }
 .tab-btn.active { color: var(--ink); }
-.tab-number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--muted);
-}
-.tab-btn.active .tab-number { color: var(--ink); border-color: var(--line-2); }
-.tab-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
+/* Icon leads; it inherits the button's color, so it accent-tints when active. */
+.tab-icon { width: 18px; height: 18px; flex-shrink: 0; }
+.tab-label { white-space: nowrap; }
 .tab-search { margin-left: auto; flex: 0 1 280px; }
 .tab-search .search-input { width: 100%; }
 
@@ -474,15 +468,17 @@ html.dark .app-main {
   gap: var(--gap);
   align-items: start;
 }
-.panels-academic > .panel { margin-bottom: 0; }
+/* min-width:0 lets a grid child shrink below its content's intrinsic size, so a
+   long deadline/course title can't force the 1fr track wider than the viewport
+   (the academic tab is the only grid layout — see DESIGN.md §8). */
+.panels-academic > .panel { margin-bottom: 0; min-width: 0; }
 .panels-academic > .panel:nth-child(5),  /* Projects */
 .panels-academic > .panel:nth-child(6) { /* Reading  */
   grid-column: 1 / -1;
 }
 
-@media (max-width: 980px) {
-  .panels-household, .panels-health { flex-direction: column; }
-}
+/* Single-column collapse for every tab is standardized in the "Small screens"
+   section near the end of this file — don't add per-tab breakpoints here. */
 
 /* ── Panel ────────────────────────────────────────────────────────────── */
 .panel {
@@ -1103,6 +1099,9 @@ html:not(.dark) .datetime-input { color-scheme: light; }
 .chore-item:hover { background: color-mix(in oklch, var(--surface-2) 60%, var(--surface)); }
 .chore-main-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .chore-name { flex: 1 1 140px; min-width: 140px; font-size: 13.5px; color: var(--ink); overflow-wrap: break-word; }
+/* Keep the row's controls together and hard against the right edge so that when
+   the row wraps on a narrow card no single button orphans onto its own line. */
+.chore-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0; }
 .chore-freq-menu {
   flex-shrink: 0;
   padding: 3px 6px;
@@ -1168,15 +1167,23 @@ html.dark .chore-due .chore-status-badge { color: oklch(0.78 0.12 78); }
 .chore-done-today .chore-name { text-decoration: line-through; color: var(--muted); }
 
 /* ── Academic tab (academic.jsx) ──────────────────────────────────────── */
+/* The one doorway per panel: a square "+" icon (→ "×" while the form is open),
+   identical to the inline .btn-add-inline used by the list panels so every
+   panel's add affordance reads the same. */
 .academic-add-btn {
-  padding: 4px 12px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 7px;
   background: var(--surface-2);
   color: var(--ink-2);
-  font-size: 12px;
+  font-size: 16px;
+  line-height: 1;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .academic-add-btn:hover { border-color: var(--accent); color: var(--accent); }
 .academic-form {
@@ -1277,7 +1284,19 @@ html:not(.dark) .academic-select { color-scheme: light; }
   text-decoration: line-through;
   color: var(--muted);
 }
-.deadline-title { flex: 1; min-width: 0; font-size: 13.5px; color: var(--ink); overflow-wrap: break-word; }
+/* Title + due share a flexible, wrapping block so they reorganize by width:
+   side by side when there's room, due dropping below the title when the row is
+   narrow (e.g. a phone's single column) instead of squeezing the title to a
+   one-character-per-line sliver. */
+.deadline-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 9px;
+}
+.deadline-title { flex: 1 1 8ch; min-width: 0; font-size: 13.5px; color: var(--ink); overflow-wrap: break-word; }
 .deadline-row .btn-delete { opacity: 0.5; }
 .deadline-row:hover .btn-delete { opacity: 1; }
 
@@ -1317,6 +1336,19 @@ html:not(.dark) .academic-select { color-scheme: light; }
 .service-card-edit .academic-select { width: 100%; }
 .service-card-edit-actions { display: flex; gap: 6px; justify-content: flex-end; }
 
+/* Generic inline-row editor (deadlines, reading list, …). An edit form packs a
+   select + text input + date picker + buttons; in a row that's a guaranteed
+   horizontal overflow on any narrow card. So the editor ALWAYS stacks its fields
+   into a full-width column (at every viewport, not just mobile — the same fields
+   never fit a half-panel either) with the actions right-aligned beneath. It fills
+   the row via flex:1, so any sibling checkbox keeps its place to the left. */
+.row-edit { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.row-edit .academic-input,
+.row-edit .academic-select,
+.row-edit .todo-input,
+.row-edit .dp-wrap { flex: none; width: 100%; }
+.row-edit-actions { display: flex; gap: 6px; justify-content: flex-end; }
+
 /* Teaching — each course is a group: a header (label + progress) sits above an
    indented checklist of its tasks, with a compact add row at the foot. */
 .teaching-course {
@@ -1329,10 +1361,18 @@ html:not(.dark) .academic-select { color-scheme: light; }
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
 }
-.teaching-course-head { display: flex; align-items: center; gap: 8px; }
-.teaching-course-rename { display: flex; gap: 8px; align-items: center; width: 100%; }
+/* flex-wrap + a wrappable pill keep a long course name from pushing the
+   done/percent count off the right edge in a narrow (single-column) panel. */
+.teaching-course-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.teaching-course-rename { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; width: 100%; }
+/* Let the rename field grow to the row width (overriding .academic-input.sm's
+   fixed 70px) so it isn't a cramped sliver beside the Save/Cancel buttons. */
+.teaching-course-rename .academic-input { flex: 1 1 120px; min-width: 0; }
 .course-pill {
   flex-shrink: 0;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
@@ -2011,16 +2051,259 @@ html:not(.dark) .academic-select { color-scheme: light; }
   color: var(--muted);
 }
 
+/* ── Mobile menu: hamburger + right slide-out drawer ──────────────────────
+   The trigger, overlay and drawer exist at all sizes but only surface on mobile
+   (the hamburger is display:none on desktop, so the drawer is never opened there
+   and just rests off-screen). The drawer collects everything the desktop keeps
+   in its top bar / footer / FABs: search, the data actions, help and tweaks.
+   Defined BEFORE the Small-screens block so that block's `display:` overrides
+   win on source order (media queries add no specificity). */
+.menu-fab {
+  display: none;  /* shown only ≤900px (see Small screens) */
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel-bg);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.menu-fab:hover { border-color: var(--line-2); color: var(--ink); }
+
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: color-mix(in oklch, var(--bg) 45%, transparent);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+.menu-overlay.open { opacity: 1; visibility: visible; }
+
+.menu-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 201;
+  width: min(82vw, 320px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  box-shadow: var(--panel-shadow-raised);
+  transform: translateX(100%);
+  transition: transform 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+}
+.menu-drawer.open { transform: translateX(0); }
+
+.menu-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.menu-drawer-title { font-family: var(--font-serif); font-size: 20px; color: var(--ink); }
+.menu-close {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.menu-close:hover { border-color: var(--line-2); color: var(--ink); }
+
+.menu-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  transition: border-color 0.15s ease;
+}
+.menu-search:focus-within { border-color: var(--accent); color: var(--accent); }
+.menu-search-input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.menu-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 2px; }
+.menu-action {
+  text-align: left;
+  padding: 11px 13px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.menu-action:hover { border-color: var(--line-2); color: var(--ink); }
+.menu-action-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.menu-action-primary:hover { filter: brightness(1.08); color: #fff; }
+
 /* ── Responsive ───────────────────────────────────────────────────────── */
-@media (max-width: 720px) {
-  .app { padding: 28px 18px 110px; }
-  .greeting { font-size: 30px; }
-  .app-header { flex-direction: column; align-items: flex-start; gap: 14px; }
-  .panels { grid-template-columns: 1fr; }
-  .panels > .panel { grid-column: 1 / -1 !important; }
-  .tab-search { flex-basis: 100%; order: 3; margin: 8px 0 0; }
-  .tab-nav { flex-wrap: wrap; }
+/* ══ Small screens ════════════════════════════════════════════════════════
+   ONE breakpoint, and only one — never add an ad-hoc per-tab breakpoint
+   elsewhere (see DESIGN.md §8). This is the single source of truth for how the
+   board reflows narrow, and it is exactly what the iOS app (a WKWebView of these
+   same files) renders at phone width.
+
+   Below 900px the whole desktop layout — multi-column panels AND the horizontal
+   top chrome (the six-tab bar + right-aligned search) — gives way together to
+   the single-column mobile layout. They share a breakpoint deliberately: the
+   width where two columns stop fitting is the same width where the tab bar stops
+   fitting, so splitting them only ever reopened a zone where one had collapsed
+   but the other still overflowed.
+
+   The mobile layout is two promises:
+   1. EVERY panel is a single full-width column, one per row, in source order.
+   2. That column is sized to 90% of the viewport — 5vw gutters either side —
+      with the chrome (header, nav, search, toolbar) stacked/wrapped to match. */
+
+@media (max-width: 900px) {
+  /* ── 1 · Single column: every tab's multi-column layout collapses ──────── */
+  .panels-academic { grid-template-columns: 1fr; }
+  .panels-academic > .panel { grid-column: 1 / -1; }
+  /* flex-direction:column + stretch so each stacked column (and the panels in
+     it) fills the full width — otherwise the inherited align-items:flex-start
+     shrinks every panel to its content width instead of the 90% column. */
+  .panels-household,
+  .panels-health,
+  .panels-finance,
+  .panels-travel { flex-direction: column; align-items: stretch; }
+  .research-columns { flex-direction: column; }
+  .panels-col { width: 100%; }
+
+  /* The two-column balance caps (lists scroll within their panel so one long
+     column doesn't tower over its neighbour) have no neighbour once stacked —
+     release them so the page scrolls as one, avoiding nested scroll on touch. */
+  .panels-household .chore-list,
+  .panels-household .todo-list,
+  .panels-household .goal-list,
+  .panels-health .habits-list,
+  .panels-health .todo-list,
+  .panels-health .goal-list { max-height: none; }
+
+  /* ── 2 · Compact mobile chrome ─────────────────────────────────────────── */
+  /* 5vw gutters ⇒ panels span 90vw; bottom padding clears the fixed tab bar. */
+  .app { padding: 24px 5vw calc(80px + env(safe-area-inset-bottom)); }
+  .greeting { font-size: 28px; }
+  /* Kill rubber-band overscroll so it can't drag the fixed bottom bar with it
+     (the bar appearing to un-stick on an upward bounce). */
+  html, body { overscroll-behavior-y: none; }
+  /* The Projects panel tiles cards into two columns on the wide desktop panel;
+     in the single-column mobile panel that grid can't fit (two 260px-min tracks
+     in a ~90vw panel) and the cards squeeze/overflow — collapse to one column. */
+  .projects-list { grid-template-columns: 1fr; }
+  /* Time and date step down so they sit quietly beside the greeting rather than
+     rivalling it once the header is stacked. */
+  .clock-time { font-size: 22px; }
+  .header-date { font-size: 13px; letter-spacing: 0.06em; }
+  /* Stack the header; the hamburger pins to its top-right corner (header-left
+     reserves room for it so the greeting wraps before reaching it). */
+  .app-header { position: relative; flex-direction: column; align-items: flex-start; gap: 12px; }
+  .header-left { width: 100%; padding-right: 48px; }
+  .header-right { width: 100%; align-items: flex-start; }
+  .header-sub.header-sub-right { align-items: flex-start; }
+  .menu-fab { display: inline-flex; }
+
+  /* Tabs become a fixed bottom bar (native-app style): six evenly-spread icons,
+     no labels, no search — so navigation is always on screen and never scrolls
+     away. Active state is the accent-tinted icon (no border indicator).
+     NB: an OPAQUE background, not the frosted backdrop-filter used elsewhere —
+     `backdrop-filter` on a `position: fixed` element is a known iOS WebKit bug
+     that detaches it and lets it scroll with the page (the "tab bar isn't sticky
+     going up" symptom). The solid fill sidesteps it. */
+  .tab-nav {
+    position: fixed;
+    inset: auto 0 0 0;
+    margin: 0;
+    z-index: 40;
+    gap: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: none;
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tab-btn { flex: 1; justify-content: center; gap: 0; padding: 11px 0; border: none; }
+  .tab-icon { width: 23px; height: 23px; }
+  .tab-label,
+  .tab-search { display: none; }
+
+  /* Help, Tweaks, the search and the data actions all move into the drawer. */
+  .help-fab,
+  .sync-bar,
   .keyboard-hints { display: none; }
+  /* The Tweaks launcher toggles its own display inline, so override with
+     !important to keep it out of the mobile chrome (it lives in the drawer). */
+  .tw-fab { display: none !important; }
+
+  /* ── 3 · Expanded-card rows: stack label + fixed-width controls ───────────
+     A flex row pairing a flexible text label with fixed-width controls (money
+     inputs, paired date pickers) squeezes the label to a one-character vertical
+     sliver at phone width — the "Travel"/"Equipment" budget heads rendered as a
+     column of letters. Stack them instead: the label takes its own line and the
+     controls flow onto the next, each control flexing to share the width. */
+  .grant-head-top,
+  .budget-top { flex-wrap: wrap; }
+  .grant-head-name,
+  .budget-cat { flex-basis: 100%; }
+  .grant-head-figures { width: 100%; }
+  .grant-head-field { flex: 1; min-width: 0; }
+  .grant-head-amount,
+  .budget-spent { flex: 1; width: auto; min-width: 0; }
+
+  /* Trip start/end pickers can't sit side by side at 90vw — stack them, and
+     turn the "→" separator to point down between the two fields. */
+  .trip-date-row { flex-direction: column; align-items: stretch; }
+  .trip-date-sep { align-self: center; transform: rotate(90deg); }
+
+  /* Chore name takes its own line; frequency, status and the action cluster
+     (.chore-actions) then share the next line without a button orphaning. */
+  .chore-name { flex-basis: 100%; }
+
+  /* ── 4 · Touch has no hover: surface the actions desktop reveals on hover ──
+     Edit/delete/undo idle at opacity 0 (or 0.5) and appear on row hover; a
+     phone has no hover, so they'd be invisible/unreachable. Show them always. */
+  .btn-edit,
+  .btn-delete,
+  .btn-chore-undo,
+  .deadline-row .btn-delete,
+  .service-card .btn-edit,
+  .budget-item .btn-delete,
+  .invest-item .btn-delete,
+  .grant-head-item .btn-delete { opacity: 1; }
 }
 
 /* ══ Finance & Travel tabs (finance.jsx / travel.jsx) ═════════════════════ */
@@ -2034,10 +2317,7 @@ html:not(.dark) .academic-select { color-scheme: light; }
   gap: var(--gap);
 }
 .panels-travel-wrap { display: flex; flex-direction: column; gap: var(--gap); }
-
-@media (max-width: 980px) {
-  .panels-finance, .panels-travel { flex-direction: column; }
-}
+/* Single-column collapse is standardized in the "Small screens" section. */
 
 /* Shared money styling */
 .money { font-variant-numeric: tabular-nums; }
@@ -2392,10 +2672,7 @@ html:not(.dark) .academic-select { color-scheme: light; }
   gap: var(--gap);
   width: 100%;
 }
-@media (max-width: 980px) {
-  .research-columns { flex-direction: column; }
-  .research-columns .panels-col { width: 100%; }
-}
+/* Single-column collapse is standardized in the "Small screens" section. */
 
 /* muted "all deadlines passed" note on CFP cards */
 .grant-due.muted { color: var(--muted); }
@@ -2478,21 +2755,18 @@ html:not(.dark) .academic-select { color-scheme: light; }
 
 /* credits — sticky footer pinned to the bottom of the viewport. Sits below the
    corner fabs (z 50+) and pads its sides so the centred text clears them. */
+/* In normal flow at the foot of the page. It used to be position:fixed, which
+   floated it permanently over content and collided with the bottom-right FABs on
+   narrow screens; as a static footer it sits above the page's bottom padding, so
+   the FABs float in the empty space below it instead of on top of it. */
 .app-credits {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 40;
   text-align: center;
-  padding: 9px 60px 10px;
+  margin-top: 40px;
+  padding: 16px 0 4px;
+  border-top: 1px solid var(--line);
   font-size: 11px;
   color: var(--muted);
   letter-spacing: 0.02em;
-  background: color-mix(in oklch, var(--bg) 82%, transparent);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-top: 1px solid var(--line);
 }
 .app-credits a {
   color: inherit;

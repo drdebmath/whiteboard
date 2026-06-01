@@ -509,7 +509,7 @@ const ReadingPanel = memo(function ReadingPanel({ items = [], onChange }) {
           <li key={item.id} data-mb-id={item.id} className={'todo-item reading-item' + (item.done ? ' done' : '')}>
             <input type="checkbox" checked={item.done} onChange={() => toggle(item.id)} />
             {editingId === item.id ? (
-              <>
+              <div className="row-edit">
                 <input
                   className="todo-input"
                   value={editText}
@@ -531,8 +531,10 @@ const ReadingPanel = memo(function ReadingPanel({ items = [], onChange }) {
                   }}
                   placeholder="URL (optional)…"
                 />
-                <button className="btn-chore-done" aria-label="Save" onClick={() => saveEdit(item.id)}>✓</button>
-              </>
+                <div className="row-edit-actions">
+                  <button className="btn-chore-done" aria-label="Save" onClick={() => saveEdit(item.id)}>✓</button>
+                </div>
+              </div>
             ) : (
               <>
                 <span className="todo-text">{item.text || '(Untitled)'}</span>
@@ -878,12 +880,14 @@ const ChoresPanel = memo(function ChoresPanel({ items, onChange }) {
                 )}
                 <ChoreFreqMenu value={chore.frequency} onChange={(f) => updateFreq(chore.id, f)} />
                 <span className="chore-status-badge">{status}</span>
-                <button className="btn-chore-done" aria-label="Mark done" onClick={() => markDone(chore.id)}>✓</button>
-                {chore.history && chore.history.length > 0 && (
-                  <button className="btn-chore-undo" aria-label="Undo last done" onClick={() => undoLast(chore.id)}>↩</button>
-                )}
-                <EditButton onClick={() => startEdit(chore)} />
-                <button className="btn-delete" aria-label="Delete" onClick={() => remove(chore.id)}>×</button>
+                <div className="chore-actions">
+                  <button className="btn-chore-done" aria-label="Mark done" onClick={() => markDone(chore.id)}>✓</button>
+                  {chore.history && chore.history.length > 0 && (
+                    <button className="btn-chore-undo" aria-label="Undo last done" onClick={() => undoLast(chore.id)}>↩</button>
+                  )}
+                  <EditButton onClick={() => startEdit(chore)} />
+                  <button className="btn-delete" aria-label="Delete" onClick={() => remove(chore.id)}>×</button>
+                </div>
               </div>
               <div className="chore-meta">
                 Last done: {lastDone}
