@@ -26,6 +26,13 @@ Visit `http://localhost:8080/`.
 
 The app stores data in browser local storage by default. Optional Gist sync stores the board as a single JSON file in a private GitHub Gist configured by the user.
 
+## iOS app
+
+The same web app runs as a native iOS app — a thin `WKWebView` wrapper that bundles
+these exact files (no separate codebase, no JS build step). React, ReactDOM, Babel
+and the fonts are vendored under `vendor/` so it works fully offline. Open
+`ios/MyBoard.xcodeproj` in Xcode and Run. See [`ios/README.md`](ios/README.md) for details.
+
 ## Privacy
 
 The repository starts with an empty board. User data, the display name, and the GitHub token are not hard-coded in the files.

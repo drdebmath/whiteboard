@@ -1,0 +1,8 @@
+# Xcode user state & build output — never commit
+xcuserdata/
+*.xcuserstate
+build/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
