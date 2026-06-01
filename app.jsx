@@ -55,7 +55,7 @@ const DATE_SOURCES = [
   { cat: "academic", kind: "Service", list: (s) => s.academic.service, date: (i) => i.due, text: (i) => i.title || i.text },
   { cat: "research", kind: "Meeting", list: (s) => s.research.students, date: (i) => i.nextMeeting, text: (i) => `${i.name} meeting` },
   { cat: "research", kind: "Milestone", list: (s) => s.research.students, date: (i) => window.soonestMilestone(i), text: (i) => `${i.name} milestone` },
-  { cat: "research", kind: "Submission", list: (s) => s.research.submissions, date: (i) => i.decisionDue, skip: (i) => i.stage === "accepted" || i.stage === "camera ready" || i.stage === "published" || i.stage === "rejected", text: (i) => `${i.title} decision` },
+  { cat: "research", kind: "Submission", list: (s) => s.research.submissions, date: (i) => i.decisionDue, skip: (i) => i.stage === "accepted" || i.stage === "camera ready" || i.stage === "published" || i.stage === "rejected", text: (i) => window.submissionBannerText ? window.submissionBannerText(i) : `${i.title} decision` },
   { cat: "research", kind: "Proposal", list: (s) => s.research.proposals, date: (i) => i.callDeadline, skip: (i) => i.status === "awarded" || i.status === "declined", text: (i) => `${i.title} call` },
   { cat: "research", kind: "CFP", list: (s) => s.research.cfps, date: (i) => window.nextCfpDeadline(i), text: (i) => i.name },
   { cat: "research", kind: "Review", list: (s) => s.research.reviews, date: (i) => i.due, skip: (i) => i.done, text: (i) => `Review ${i.venue}` },
@@ -68,6 +68,45 @@ const DATE_SOURCES = [
   { cat: "finance", kind: "Grant", list: (s) => s.finance.grants, date: (i) => i.expiry, text: (i) => `${i.title} ends` },
   { cat: "travel", kind: "Trip", list: (s) => s.travel.trips, date: (i) => i.start, text: (i) => i.destination },
   { cat: "travel", kind: "Document", list: (s) => s.travel.documents, date: (i) => i.expiry, text: (i) => `${i.label ? `${i.kind} (${i.label})` : i.kind} expires` },
+];
+
+// ─── Searchable items: one registry, like DATE_SOURCES ───
+//
+// Every searchable list is described once here so search can't silently omit a
+// panel (the same drift DATE_SOURCES prevents for banners/stats). `hay` is the
+// lowercased-on-match haystack; `text` is the label shown in results; the id is
+// read from `item.id`. Nested cases (grant budget heads, per-tab goals) are
+// handled separately below because they don't map one row → one result.
+
+const SEARCH_SOURCES = [
+  { cat: "academic", type: "Deadline",  list: (s) => s.academic.deadlines, hay: (i) => i.title || i.text || "", text: (i) => i.title || i.text },
+  { cat: "academic", type: "Teaching",  list: (s) => s.academic.teaching,  hay: (i) => i.title || "", text: (i) => i.title || i.text },
+  { cat: "academic", type: "Service",   list: (s) => s.academic.service,   hay: (i) => i.title || "", text: (i) => i.title || i.text },
+  { cat: "academic", type: "Reading",   list: (s) => s.academic.readings,  hay: (i) => i.text || i.title || "", text: (i) => i.text || i.title },
+  { cat: "academic", type: "Timetable", list: (s) => s.academic.timetable, hay: (i) => `${i.title || ""} ${i.location || ""}`, text: (i) => i.title },
+  { cat: "research", type: "Project",    list: (s) => s.research.projects,    hay: (i) => i.name || "", text: (i) => i.name },
+  { cat: "research", type: "Advisee",    list: (s) => s.research.students,    hay: (i) => `${i.name || ""} ${i.topic || ""} ${i.program || ""}`, text: (i) => i.name },
+  { cat: "research", type: "Submission", list: (s) => s.research.submissions, hay: (i) => `${i.title || ""} ${i.venue || ""}`, text: (i) => i.title },
+  { cat: "research", type: "Proposal",   list: (s) => s.research.proposals,   hay: (i) => `${i.title || ""} ${i.agency || ""}`, text: (i) => i.title },
+  { cat: "research", type: "CFP",        list: (s) => s.research.cfps,        hay: (i) => i.name || "", text: (i) => i.name },
+  { cat: "research", type: "Review",     list: (s) => s.research.reviews,     hay: (i) => `${i.venue || ""} ${i.paper || ""}`, text: (i) => i.venue },
+  { cat: "research", type: "Letter",     list: (s) => s.research.letters,     hay: (i) => `${i.student || ""} ${i.purpose || ""}`, text: (i) => i.student },
+  { cat: "research", type: "Contact",    list: (s) => s.research.contacts,    hay: (i) => `${i.name || ""} ${i.affiliation || ""} ${i.email || ""}`, text: (i) => i.name },
+  { cat: "household", type: "Chore",     list: (s) => s.household.chores,    hay: (i) => i.text || "", text: (i) => i.text },
+  { cat: "household", type: "Reminder",  list: (s) => s.household.reminders, hay: (i) => i.text || "", text: (i) => i.text },
+  { cat: "household", type: "Shopping",  list: (s) => s.household.shopping,  hay: (i) => i.text || "", text: (i) => i.text },
+  { cat: "health", type: "Habit",        list: (s) => s.health.habits,    hay: (i) => i.text || "", text: (i) => i.text },
+  { cat: "health", type: "Reminder",     list: (s) => s.health.reminders, hay: (i) => i.text || "", text: (i) => i.text },
+  { cat: "finance", type: "Grant",       list: (s) => s.finance.grants,         hay: (i) => i.title || "", text: (i) => i.title },
+  { cat: "finance", type: "Bill",        list: (s) => s.finance.bills,          hay: (i) => i.name || "", text: (i) => i.name },
+  { cat: "finance", type: "Claim",       list: (s) => s.finance.reimbursements, hay: (i) => `${i.title || ""} ${i.party || ""}`, text: (i) => i.title },
+  { cat: "finance", type: "Loan",        list: (s) => s.finance.loans,          hay: (i) => `${i.name || ""} ${i.lender || ""}`, text: (i) => i.name },
+  { cat: "finance", type: "Savings",     list: (s) => s.finance.savings,        hay: (i) => i.name || "", text: (i) => i.name },
+  { cat: "finance", type: "Investment",  list: (s) => s.finance.investments,    hay: (i) => i.name || "", text: (i) => i.name },
+  { cat: "travel", type: "Trip",     list: (s) => s.travel.trips,     hay: (i) => i.destination || "", text: (i) => i.destination },
+  { cat: "travel", type: "Packing",  list: (s) => s.travel.packing,   hay: (i) => i.text || "", text: (i) => i.text },
+  { cat: "travel", type: "Wishlist", list: (s) => s.travel.wishlist,  hay: (i) => `${i.text || ""} ${i.note || ""}`, text: (i) => i.text },
+  { cat: "travel", type: "Document", list: (s) => s.travel.documents, hay: (i) => `${i.kind || ""} ${i.label || ""} ${i.number || ""}`, text: (i) => (i.label ? `${i.kind} · ${i.label}` : i.kind) },
 ];
 
 // Walk every dated item across the board, normalizing its date (epoch ms, ISO
@@ -421,8 +460,9 @@ const CATEGORY_BLURBS = {
 const TWEAK_DEFAULTS = {
   __key: "whiteboard",
   density: "default",
-  darkMode: false,
-  autoTheme: true,
+  themeMode: "time", // "time" | "system" | "light" | "dark"
+  darkMode: false,   // legacy — read only as a migration fallback
+  autoTheme: true,   // legacy — read only as a migration fallback
   font: "system",
   hue: 268,
   fontSize: 13,
@@ -461,6 +501,11 @@ function App() {
   const hasLoadedRemoteRef = useRef(false);
   const stateRef = useRef(state);
   const [storageError, setStorageError] = useState("");
+  // Tracks the OS dark-mode preference, kept live so the "System" theme mode
+  // follows the user's setting without a reload.
+  const [systemDark, setSystemDark] = useState(
+    () => window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+  );
 
   // ─── Clock effect ───
 
@@ -470,6 +515,15 @@ function App() {
   }, []);
 
   useEffect(() => { stateRef.current = state; }, [state]);
+
+  // ─── System theme preference ───
+  useEffect(() => {
+    if (!window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = (e) => setSystemDark(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   // Keep every in-app form as a React-only interaction. A native submit falls
   // back to navigating to the current page, which looks exactly like a reload.
@@ -492,14 +546,18 @@ function App() {
   }, [tweaks.font]);
 
   // ─── Dark mode ───
-  // When autoTheme is on, the theme follows the clock: light through the day,
-  // dark in the evening/early morning. The manual toggle is the override.
+  // Theme has four modes: "time" follows the clock (light through the day, dark
+  // evening/early morning), "system" follows the OS preference, and "light" /
+  // "dark" are fixed. Older boards stored autoTheme/darkMode booleans; fall back
+  // to those so the setting migrates without a reset.
+  const themeMode = tweaks.themeMode
+    || (tweaks.autoTheme ? "time" : (tweaks.darkMode ? "dark" : "light"));
 
-  // Resolve the effective theme once: auto-theme follows the clock, otherwise
-  // the manual toggle wins. Everything that reacts to dark/light reads this.
-  const isDark = tweaks.autoTheme
-    ? now.getHours() < 7 || now.getHours() >= 19
-    : !!tweaks.darkMode;
+  // Resolve the effective theme once. Everything that reacts to dark/light reads this.
+  const isDark =
+    themeMode === "time" ? (now.getHours() < 7 || now.getHours() >= 19)
+    : themeMode === "system" ? systemDark
+    : themeMode === "dark";
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark);
@@ -623,6 +681,16 @@ function App() {
     }
   }, []);
 
+  // ─── updateSlice ───
+  // Returns a setter that replaces one list (e.g. academic.deadlines) and routes
+  // it through safeUpdate — so every panel's onChange is one call, not a repeated
+  // nested-spread that's easy to get subtly wrong.
+  const updateSlice = useCallback(
+    (catKey, listKey) => (value) =>
+      safeUpdate((prev) => ({ ...prev, [catKey]: { ...prev[catKey], [listKey]: value } })),
+    [safeUpdate]
+  );
+
   // ─── Undo ───
 
   const handleUndo = useCallback(() => {
@@ -673,105 +741,23 @@ function App() {
     if (!q) return null;
     const results = [];
 
-    for (const d of state.academic.deadlines) {
-      const label = d.title || d.text || "";
-      if (label.toLowerCase().includes(q)) results.push({ cat: "academic", type: "Deadline", text: label, id: d.id });
+    // The bulk of search: one pass over the registry, one row → one result.
+    for (const src of SEARCH_SOURCES) {
+      for (const item of src.list(state) || []) {
+        if (src.hay(item).toLowerCase().includes(q)) {
+          results.push({ cat: src.cat, type: src.type, text: src.text(item), id: item.id });
+        }
+      }
     }
-    for (const t of state.academic.teaching) {
-      if ((t.title || "").toLowerCase().includes(q)) results.push({ cat: "academic", type: "Teaching", text: t.title || t.text, id: t.id });
-    }
-    for (const s of state.academic.service) {
-      if ((s.title || "").toLowerCase().includes(q)) results.push({ cat: "academic", type: "Service", text: s.title || s.text, id: s.id });
-    }
-    for (const r of state.academic.readings) {
-      const label = r.text || r.title || "";
-      if (label.toLowerCase().includes(q)) results.push({ cat: "academic", type: "Reading", text: label, id: r.id });
-    }
-    for (const s of state.academic.timetable) {
-      const label = `${s.title || ""} ${s.location || ""}`;
-      if (label.toLowerCase().includes(q)) results.push({ cat: "academic", type: "Timetable", text: s.title, id: s.id });
-    }
-    for (const p of state.research.projects) {
-      if ((p.name || "").toLowerCase().includes(q)) results.push({ cat: "research", type: "Project", text: p.name, id: p.id });
-    }
-    for (const st of state.research.students) {
-      const label = `${st.name || ""} ${st.topic || ""} ${st.program || ""}`;
-      if (label.toLowerCase().includes(q)) results.push({ cat: "research", type: "Advisee", text: st.name, id: st.id });
-    }
-    for (const sb of state.research.submissions) {
-      const label = `${sb.title || ""} ${sb.venue || ""}`;
-      if (label.toLowerCase().includes(q)) results.push({ cat: "research", type: "Submission", text: sb.title, id: sb.id });
-    }
-    for (const p of state.research.proposals) {
-      const label = `${p.title || ""} ${p.agency || ""}`;
-      if (label.toLowerCase().includes(q)) results.push({ cat: "research", type: "Proposal", text: p.title, id: p.id });
-    }
-    for (const c of state.research.cfps) {
-      if ((c.name || "").toLowerCase().includes(q)) results.push({ cat: "research", type: "CFP", text: c.name, id: c.id });
-    }
-    for (const r of state.research.reviews) {
-      const label = `${r.venue || ""} ${r.paper || ""}`;
-      if (label.toLowerCase().includes(q)) results.push({ cat: "research", type: "Review", text: r.venue, id: r.id });
-    }
-    for (const l of state.research.letters) {
-      const label = `${l.student || ""} ${l.purpose || ""}`;
-      if (label.toLowerCase().includes(q)) results.push({ cat: "research", type: "Letter", text: l.student, id: l.id });
-    }
-    for (const c of state.research.contacts) {
-      const label = `${c.name || ""} ${c.affiliation || ""} ${c.email || ""}`;
-      if (label.toLowerCase().includes(q)) results.push({ cat: "research", type: "Contact", text: c.name, id: c.id });
-    }
-    for (const c of state.household.chores) {
-      if ((c.text || "").toLowerCase().includes(q)) results.push({ cat: "household", type: "Chore", text: c.text, id: c.id });
-    }
-    for (const r of state.household.reminders) {
-      if ((r.text || "").toLowerCase().includes(q)) results.push({ cat: "household", type: "Reminder", text: r.text, id: r.id });
-    }
-    for (const s of state.household.shopping) {
-      if ((s.text || "").toLowerCase().includes(q)) results.push({ cat: "household", type: "Shopping", text: s.text, id: s.id });
-    }
-    for (const h of state.health.habits) {
-      if ((h.text || "").toLowerCase().includes(q)) results.push({ cat: "health", type: "Habit", text: h.text, id: h.id });
-    }
-    for (const r of state.health.reminders) {
-      if ((r.text || "").toLowerCase().includes(q)) results.push({ cat: "health", type: "Reminder", text: r.text, id: r.id });
-    }
+
+    // Nested / fan-out cases the row→result registry can't express:
+    // a grant's budget heads each surface separately…
     for (const g of state.finance.grants) {
-      if ((g.title || "").toLowerCase().includes(q)) results.push({ cat: "finance", type: "Grant", text: g.title, id: g.id });
       for (const h of g.heads || []) {
         if ((h.name || "").toLowerCase().includes(q)) results.push({ cat: "finance", type: "Budget head", text: `${h.name} · ${g.title}`, id: g.id });
       }
     }
-    for (const b of state.finance.bills) {
-      if ((b.name || "").toLowerCase().includes(q)) results.push({ cat: "finance", type: "Bill", text: b.name, id: b.id });
-    }
-    for (const r of state.finance.reimbursements) {
-      const label = `${r.title || ""} ${r.party || ""}`;
-      if (label.toLowerCase().includes(q)) results.push({ cat: "finance", type: "Claim", text: r.title, id: r.id });
-    }
-    for (const l of state.finance.loans) {
-      if ((l.name || "").toLowerCase().includes(q) || (l.lender || "").toLowerCase().includes(q)) results.push({ cat: "finance", type: "Loan", text: l.name, id: l.id });
-    }
-    for (const sv of state.finance.savings) {
-      if ((sv.name || "").toLowerCase().includes(q)) results.push({ cat: "finance", type: "Savings", text: sv.name, id: sv.id });
-    }
-    for (const iv of state.finance.investments) {
-      if ((iv.name || "").toLowerCase().includes(q)) results.push({ cat: "finance", type: "Investment", text: iv.name, id: iv.id });
-    }
-    for (const t of state.travel.trips) {
-      if ((t.destination || "").toLowerCase().includes(q)) results.push({ cat: "travel", type: "Trip", text: t.destination, id: t.id });
-    }
-    for (const p of state.travel.packing) {
-      if ((p.text || "").toLowerCase().includes(q)) results.push({ cat: "travel", type: "Packing", text: p.text, id: p.id });
-    }
-    for (const w of state.travel.wishlist) {
-      const label = `${w.text || ""} ${w.note || ""}`;
-      if (label.toLowerCase().includes(q)) results.push({ cat: "travel", type: "Wishlist", text: w.text, id: w.id });
-    }
-    for (const d of state.travel.documents) {
-      const hay = `${d.kind || ""} ${d.label || ""} ${d.number || ""}`.toLowerCase();
-      if (hay.includes(q)) results.push({ cat: "travel", type: "Document", text: d.label ? `${d.kind} · ${d.label}` : d.kind, id: d.id });
-    }
+    // …and goals live on every tab under the same key.
     for (const cat of ["academic", "research", "household", "health", "finance", "travel"]) {
       for (const g of state[cat].goals || []) {
         const label = `${g.text || ""} ${g.note || ""}`;
@@ -974,31 +960,16 @@ function App() {
       case "academic":
         return (
           <div className="panels panels-academic">
-            <DeadlinesPanel
-              items={s.deadlines}
-              onChange={(deadlines) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, deadlines } }))}
-            />
+            <DeadlinesPanel items={s.deadlines} onChange={updateSlice("academic", "deadlines")} />
             <GoalsPanel
               items={s.goals || []}
               placeholder="e.g. publish a textbook…"
-              onChange={(goals) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, goals } }))}
+              onChange={updateSlice("academic", "goals")}
             />
-            <TeachingPanel
-              items={s.teaching}
-              onChange={(teaching) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, teaching } }))}
-            />
-            <TimetablePanel
-              items={s.timetable || []}
-              onChange={(timetable) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, timetable } }))}
-            />
-            <ServicePanel
-              items={s.service}
-              onChange={(service) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, service } }))}
-            />
-            <ReadingPanel
-              items={s.readings || []}
-              onChange={(readings) => safeUpdate((prev) => ({ ...prev, academic: { ...prev.academic, readings } }))}
-            />
+            <TeachingPanel items={s.teaching} onChange={updateSlice("academic", "teaching")} />
+            <TimetablePanel items={s.timetable || []} onChange={updateSlice("academic", "timetable")} />
+            <ServicePanel items={s.service} onChange={updateSlice("academic", "service")} />
+            <ReadingPanel items={s.readings || []} onChange={updateSlice("academic", "readings")} />
           </div>
         );
 
@@ -1006,48 +977,23 @@ function App() {
         const cur = tweaks.currency || "₹";
         return (
           <div className="panels panels-research">
-            <ProjectPanel
-              items={s.projects || []}
-              onChange={(projects) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, projects } }))}
-            />
+            <ProjectPanel items={s.projects || []} onChange={updateSlice("research", "projects")} />
             <div className="research-columns">
               <div className="panels-col">
-                <AdviseesPanel
-                  items={s.students}
-                  onChange={(students) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, students } }))}
-                />
-                <SubmissionsPanel
-                  items={s.submissions}
-                  onChange={(submissions) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, submissions } }))}
-                />
-                <ProposalsPanel
-                  items={s.proposals}
-                  currency={cur}
-                  onChange={(proposals) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, proposals } }))}
-                />
-                <CFPPanel
-                  items={s.cfps}
-                  onChange={(cfps) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, cfps } }))}
-                />
+                <AdviseesPanel items={s.students} onChange={updateSlice("research", "students")} />
+                <SubmissionsPanel items={s.submissions} onChange={updateSlice("research", "submissions")} />
+                <ProposalsPanel items={s.proposals} currency={cur} onChange={updateSlice("research", "proposals")} />
+                <CFPPanel items={s.cfps} onChange={updateSlice("research", "cfps")} />
               </div>
               <div className="panels-col">
                 <GoalsPanel
                   items={s.goals || []}
                   placeholder="e.g. land a major grant, graduate 3 PhDs…"
-                  onChange={(goals) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, goals } }))}
+                  onChange={updateSlice("research", "goals")}
                 />
-                <ReviewsPanel
-                  items={s.reviews}
-                  onChange={(reviews) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, reviews } }))}
-                />
-                <LettersPanel
-                  items={s.letters}
-                  onChange={(letters) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, letters } }))}
-                />
-                <ContactsPanel
-                  items={s.contacts}
-                  onChange={(contacts) => safeUpdate((prev) => ({ ...prev, research: { ...prev.research, contacts } }))}
-                />
+                <ReviewsPanel items={s.reviews} onChange={updateSlice("research", "reviews")} />
+                <LettersPanel items={s.letters} onChange={updateSlice("research", "letters")} />
+                <ContactsPanel items={s.contacts} onChange={updateSlice("research", "contacts")} />
               </div>
             </div>
           </div>
@@ -1058,25 +1004,16 @@ function App() {
         return (
           <div className="panels panels-household">
             <div className="panels-col">
-              <ChoresPanel
-                items={s.chores}
-                onChange={(chores) => safeUpdate((prev) => ({ ...prev, household: { ...prev.household, chores } }))}
-              />
-              <ShoppingPanel
-                items={s.shopping}
-                onChange={(shopping) => safeUpdate((prev) => ({ ...prev, household: { ...prev.household, shopping } }))}
-              />
+              <ChoresPanel items={s.chores} onChange={updateSlice("household", "chores")} />
+              <ShoppingPanel items={s.shopping} onChange={updateSlice("household", "shopping")} />
             </div>
             <div className="panels-col">
               <GoalsPanel
                 items={s.goals || []}
                 placeholder="e.g. declutter the garage…"
-                onChange={(goals) => safeUpdate((prev) => ({ ...prev, household: { ...prev.household, goals } }))}
+                onChange={updateSlice("household", "goals")}
               />
-              <ReminderPanel
-                items={s.reminders}
-                onChange={(reminders) => safeUpdate((prev) => ({ ...prev, household: { ...prev.household, reminders } }))}
-              />
+              <ReminderPanel items={s.reminders} onChange={updateSlice("household", "reminders")} />
             </div>
           </div>
         );
@@ -1085,21 +1022,15 @@ function App() {
         return (
           <div className="panels panels-health">
             <div className="panels-col">
-              <HabitPanel
-                items={s.habits}
-                onChange={(habits) => safeUpdate((prev) => ({ ...prev, health: { ...prev.health, habits } }))}
-              />
+              <HabitPanel items={s.habits} onChange={updateSlice("health", "habits")} />
             </div>
             <div className="panels-col">
               <GoalsPanel
                 items={s.goals || []}
                 placeholder="e.g. fix back pain, run a marathon…"
-                onChange={(goals) => safeUpdate((prev) => ({ ...prev, health: { ...prev.health, goals } }))}
+                onChange={updateSlice("health", "goals")}
               />
-              <ReminderPanel
-                items={s.reminders}
-                onChange={(reminders) => safeUpdate((prev) => ({ ...prev, health: { ...prev.health, reminders } }))}
-              />
+              <ReminderPanel items={s.reminders} onChange={updateSlice("health", "reminders")} />
             </div>
           </div>
         );
@@ -1109,43 +1040,19 @@ function App() {
         return (
           <div className="panels panels-finance">
             <div className="panels-col">
-              <GrantPanel
-                items={s.grants}
-                currency={cur}
-                onChange={(grants) => safeUpdate((prev) => ({ ...prev, finance: { ...prev.finance, grants } }))}
-              />
-              <BillsPanel
-                items={s.bills}
-                currency={cur}
-                onChange={(bills) => safeUpdate((prev) => ({ ...prev, finance: { ...prev.finance, bills } }))}
-              />
-              <ReimbursementPanel
-                items={s.reimbursements}
-                currency={cur}
-                onChange={(reimbursements) => safeUpdate((prev) => ({ ...prev, finance: { ...prev.finance, reimbursements } }))}
-              />
-              <LoanPanel
-                items={s.loans}
-                currency={cur}
-                onChange={(loans) => safeUpdate((prev) => ({ ...prev, finance: { ...prev.finance, loans } }))}
-              />
+              <GrantPanel items={s.grants} currency={cur} onChange={updateSlice("finance", "grants")} />
+              <BillsPanel items={s.bills} currency={cur} onChange={updateSlice("finance", "bills")} />
+              <ReimbursementPanel items={s.reimbursements} currency={cur} onChange={updateSlice("finance", "reimbursements")} />
+              <LoanPanel items={s.loans} currency={cur} onChange={updateSlice("finance", "loans")} />
             </div>
             <div className="panels-col">
               <GoalsPanel
                 items={s.goals || []}
                 placeholder="e.g. be debt-free, retire by 55…"
-                onChange={(goals) => safeUpdate((prev) => ({ ...prev, finance: { ...prev.finance, goals } }))}
+                onChange={updateSlice("finance", "goals")}
               />
-              <InvestmentPanel
-                items={s.investments}
-                currency={cur}
-                onChange={(investments) => safeUpdate((prev) => ({ ...prev, finance: { ...prev.finance, investments } }))}
-              />
-              <SavingsPanel
-                items={s.savings}
-                currency={cur}
-                onChange={(savings) => safeUpdate((prev) => ({ ...prev, finance: { ...prev.finance, savings } }))}
-              />
+              <InvestmentPanel items={s.investments} currency={cur} onChange={updateSlice("finance", "investments")} />
+              <SavingsPanel items={s.savings} currency={cur} onChange={updateSlice("finance", "savings")} />
             </div>
           </div>
         );
@@ -1154,36 +1061,20 @@ function App() {
       case "travel":
         return (
           <div className="panels-travel-wrap">
-            <TripAlerts
-              items={s.trips}
-              onChange={(trips) => safeUpdate((prev) => ({ ...prev, travel: { ...prev.travel, trips } }))}
-            />
+            <TripAlerts items={s.trips} onChange={updateSlice("travel", "trips")} />
             <div className="panels panels-travel">
               <div className="panels-col">
-                <TripsPanel
-                  items={s.trips}
-                  onChange={(trips) => safeUpdate((prev) => ({ ...prev, travel: { ...prev.travel, trips } }))}
-                />
-                <DocumentsPanel
-                  items={s.documents}
-                  onChange={(documents) => safeUpdate((prev) => ({ ...prev, travel: { ...prev.travel, documents } }))}
-                />
+                <TripsPanel items={s.trips} onChange={updateSlice("travel", "trips")} />
+                <DocumentsPanel items={s.documents} onChange={updateSlice("travel", "documents")} />
               </div>
               <div className="panels-col">
                 <GoalsPanel
                   items={s.goals || []}
                   placeholder="e.g. visit all 7 continents…"
-                  onChange={(goals) => safeUpdate((prev) => ({ ...prev, travel: { ...prev.travel, goals } }))}
+                  onChange={updateSlice("travel", "goals")}
                 />
-                <PackingPanel
-                  items={s.packing}
-                  trips={s.trips}
-                  onChange={(packing) => safeUpdate((prev) => ({ ...prev, travel: { ...prev.travel, packing } }))}
-                />
-                <WishlistPanel
-                  items={s.wishlist}
-                  onChange={(wishlist) => safeUpdate((prev) => ({ ...prev, travel: { ...prev.travel, wishlist } }))}
-                />
+                <PackingPanel items={s.packing} trips={s.trips} onChange={updateSlice("travel", "packing")} />
+                <WishlistPanel items={s.wishlist} onChange={updateSlice("travel", "wishlist")} />
               </div>
             </div>
           </div>
@@ -1212,7 +1103,7 @@ function App() {
               tabIndex={0}
               onClick={() => goToSearchResult(r)}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goToSearchResult(r); } }}
-              style={{ borderLeftColor: cat?.accent || "#555", cursor: "pointer" }}
+              style={{ borderLeftColor: cat?.accent || "var(--line-2)", cursor: "pointer" }}
             >
               <span className="search-result-cat" style={{ color: cat?.accent }}>{r.cat}</span>
               <span className="search-result-type">{r.type}</span>
@@ -1228,9 +1119,10 @@ function App() {
 
   const greeting = greetingFor(now);
   const displayName = profileName || "";
-  const { nextUp, nearestOverdue } = collectUpcomingPair(state);
+  // Recompute only when the data or the clock tick changes, not on every keystroke.
+  const { nextUp, nearestOverdue } = useMemo(() => collectUpcomingPair(state), [state, now]);
   const cat = CATEGORIES.find((c) => c.id === tab);
-  const stats = computeStats(state, now);
+  const stats = useMemo(() => computeStats(state, now), [state, now]);
   // Transient status (Syncing…/failed) takes priority; otherwise the relative
   // "synced X ago" label, recomputed each clock tick via `now`.
   const syncText = syncStatus || syncedAgoLabel(lastSyncedAt, now.getTime());
@@ -1310,22 +1202,38 @@ function App() {
       )}
 
       {/* Tab navigation */}
-      <nav className="tab-nav">
-        {CATEGORIES.map((c, i) => (
-          <button
-            key={c.id}
-            className={`tab-btn ${tab === c.id ? "active" : ""}`}
-            onClick={() => setTab(c.id)}
-            style={tab === c.id ? { borderBottomColor: c.accent, color: c.accent } : {}}
-          >
-            <span className="tab-number">{i + 1}</span>
-            {c.label}
-            <span
-              className="tab-dot"
-              style={{ background: tab === c.id ? c.accent : "transparent" }}
-            />
-          </button>
-        ))}
+      <nav className="tab-nav" role="tablist" aria-label="Boards">
+        {CATEGORIES.map((c, i) => {
+          const selected = tab === c.id;
+          return (
+            <button
+              key={c.id}
+              id={`tab-${c.id}`}
+              role="tab"
+              aria-selected={selected}
+              aria-controls="tab-panel"
+              tabIndex={selected ? 0 : -1}
+              className={`tab-btn ${selected ? "active" : ""}`}
+              onClick={() => setTab(c.id)}
+              onKeyDown={(e) => {
+                if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+                e.preventDefault();
+                const dir = e.key === "ArrowRight" ? 1 : -1;
+                const next = CATEGORIES[(i + dir + CATEGORIES.length) % CATEGORIES.length];
+                setTab(next.id);
+                requestAnimationFrame(() => document.getElementById(`tab-${next.id}`)?.focus());
+              }}
+              style={selected ? { borderBottomColor: c.accent, color: c.accent } : {}}
+            >
+              <span className="tab-number">{i + 1}</span>
+              {c.label}
+              <span
+                className="tab-dot"
+                style={{ background: selected ? c.accent : "transparent" }}
+              />
+            </button>
+          );
+        })}
 
         {/* Search */}
         <div className="tab-search">
@@ -1341,7 +1249,13 @@ function App() {
       </nav>
 
       {/* Panels or search results */}
-      <main className="app-main" style={{ "--tab-tint": cat?.accent }}>
+      <main
+        className="app-main"
+        id="tab-panel"
+        role="tabpanel"
+        aria-labelledby={`tab-${tab}`}
+        style={{ "--tab-tint": cat?.accent }}
+      >
         {searchQuery.trim() ? renderSearchResults() : renderPanels(tab)}
       </main>
 
@@ -1431,8 +1345,17 @@ function App() {
       {/* Tweaks panel */}
       <TweaksPanel title="Tweaks">
         <TweakSection label="Appearance">
-          <TweakToggle label="Auto theme (by time)" value={tweaks.autoTheme} onChange={(v) => setTweak("autoTheme", v)} />
-          <TweakToggle label="Dark mode" value={tweaks.darkMode} onChange={(v) => setTweak("darkMode", v)} />
+          <TweakRadio
+            label="Theme"
+            value={themeMode}
+            options={[
+              { value: "time", label: "Time" },
+              { value: "system", label: "System" },
+              { value: "light", label: "Light" },
+              { value: "dark", label: "Dark" },
+            ]}
+            onChange={(v) => setTweak("themeMode", v)}
+          />
           <TweakRadio
             label="Density"
             value={tweaks.density}

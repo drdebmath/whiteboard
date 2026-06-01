@@ -106,22 +106,24 @@ them.
 
 ---
 
-## 4. Adding items — ONE doorway per panel (the rule to converge on)
+## 4. Adding items — ONE doorway per panel
 
-Today there are three conventions; that is the biggest single source of visual
-noise. The target rule:
+There are exactly two add-doorways, chosen by how heavy the item is. Every panel
+already follows this; keep it that way.
 
 - **Light items** (a line of text, maybe a date) → an **always-visible add row**
   (`.todo-input-row`): input + `+`. One line, low chrome. (Reminders, shopping,
   habits, packing, wishlist, savings, grant heads do this — keep it.)
 - **Structured items** (3+ fields) → a **collapsed `+ Add` toggle** that reveals
-  the form (`.academic-form`) only when adding, then closes. Deadlines, Teaching,
-  Service, Trips, Loans, Grants, Advisees, Timetable already do this — it is the
-  correct default for heavy panels.
+  the form (`.academic-form`) only when adding, then closes again. Deadlines,
+  Teaching, Service, Trips, Loans, Grants, Advisees, Timetable, Submissions,
+  Proposals, CFP, Reviews, Letters, Bills, Reimbursements, Investments,
+  Contacts, Documents all do this. It is the correct default for heavy panels.
 - **Never leave a multi-field form permanently open** at the top of a panel. A
-  panel's resting state should show *data*, not an empty form. (Submissions,
-  Proposals, CFP, Reviews, Letters, Bills, Reimbursements, Investments, Contacts
-  currently violate this — they greet you with empty inputs before any content.)
+  panel's resting state must show *data* (or, when empty, a one-line
+  `.panel-empty` hint) — never an empty form. This was once the board's biggest
+  source of visual noise; it has been paid down, so any new panel that reopens it
+  is a regression, not a style choice.
 
 Buttons that trigger the doorway are also unified: the pill `+ Add`
 (`.academic-add-btn`) for the toggle form; the 24px square `+`
@@ -161,6 +163,11 @@ never on layout (no jumping). State that comes and goes (sync status) **reserves
 its space and fades** rather than mounting/unmounting and reflowing the view; new
 transient UI must do the same. The undo toast and date popover may animate in
 (small translate + fade); persistent surfaces may not.
+
+A `prefers-reduced-motion: reduce` block at the end of `styles.css` collapses all
+animation and transition durations to ~0 for users who ask the OS to reduce
+motion. Don't fight it with inline-styled or JS-driven animation that bypasses
+CSS transitions — route motion through CSS so this switch keeps covering it.
 
 ---
 

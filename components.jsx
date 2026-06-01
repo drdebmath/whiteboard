@@ -52,7 +52,11 @@ const ReminderPanel = memo(function ReminderPanel({ items, onChange }) {
     onChange(items.filter(i => i.id !== id));
   };
 
-  const sorted = [...items].sort((a, b) => new Date(a.when) - new Date(b.when));
+  // Done reminders dim and drop to the bottom (forward-looking philosophy,
+  // DESIGN.md §7); live ones stay in soonest-first order.
+  const sorted = [...items].sort(
+    (a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || new Date(a.when) - new Date(b.when)
+  );
 
   return (
     <div className="panel">
@@ -73,6 +77,7 @@ const ReminderPanel = memo(function ReminderPanel({ items, onChange }) {
         />
         <button className="btn-add" aria-label="Add" onClick={add}>+</button>
       </div>
+      {!sorted.length && <div className="panel-empty">No reminders yet</div>}
       <ul className="todo-list">
         {sorted.map((item) => {
           const { label, rel, overdue, soon } = formatWhen(item.when);
@@ -84,7 +89,7 @@ const ReminderPanel = memo(function ReminderPanel({ items, onChange }) {
             <li key={item.id} data-mb-id={item.id} className={cls}>
               <input type="checkbox" checked={item.done} onChange={() => toggle(item.id)} />
               <span className="todo-text">{item.text}</span>
-              <span className="reminder-time">{label} ({rel})</span>
+              <span className="reminder-time">{label} · {rel}</span>
               <button className="btn-delete" aria-label="Delete" onClick={() => remove(item.id)}>×</button>
             </li>
           );
@@ -593,6 +598,7 @@ const ShoppingPanel = memo(function ShoppingPanel({ items, onChange }) {
         />
         <button className="btn-add" aria-label="Add" onClick={add}>+</button>
       </div>
+      {!items.length && <div className="panel-empty">Nothing on the list</div>}
       <ul className="todo-list">
         {items.map((item) => (
           <li key={item.id} data-mb-id={item.id} className={'todo-item' + (item.bought ? ' done' : '')}>
@@ -691,6 +697,7 @@ const HabitPanel = memo(function HabitPanel({ items, onChange }) {
           placeholder="New habit…"
         />
       </div>
+      {!items.length && <div className="panel-empty">No habits yet — start one</div>}
       <div className="habits-list">
         {items.map((habit) => {
           const { current, best } = computeStreak(habit.history || []);
@@ -843,6 +850,7 @@ const ChoresPanel = memo(function ChoresPanel({ items, onChange }) {
           placeholder="New chore…"
         />
       </div>
+      {!sorted.length && <div className="panel-empty">No chores yet</div>}
       <ul className="chore-list">
         {sorted.map((chore) => {
           const status = choreStatus(chore);

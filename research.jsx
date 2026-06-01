@@ -194,6 +194,25 @@ const SUB_STAGE_COLOR = {
   rejected: "oklch(0.64 0.14 30)",
 };
 
+// What the `decisionDue` date means depends on the stage, so the banner and the
+// panel can label it honestly instead of always calling it a "decision": while
+// drafting it's the submission deadline; once submitted/under review you're
+// awaiting a decision; in revision it's the revision due date.
+const SUB_DUE_NOUN = { drafting: "submission", submitted: "decision", "under review": "decision", revision: "revision" };
+const submissionDueNoun = (stage) => SUB_DUE_NOUN[stage] || "decision";
+window.submissionDueNoun = submissionDueNoun;
+
+// The preposition that ties the noun to its venue, so the banner reads naturally:
+// "submission to ICML", "decision from NeurIPS", "revision for TPAMI".
+const SUB_DUE_PREP = { submission: "to", decision: "from", revision: "for" };
+function submissionBannerText(s) {
+  const noun = submissionDueNoun(s.stage);
+  const venue = (s.venue || "").trim();
+  const prep = SUB_DUE_PREP[noun];
+  return `${s.title} ${noun}${venue && prep ? ` ${prep} ${venue}` : ""}`;
+}
+window.submissionBannerText = submissionBannerText;
+
 const SubmissionsPanel = memo(function SubmissionsPanel({ items = [], onChange }) {
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
@@ -247,7 +266,7 @@ const SubmissionsPanel = memo(function SubmissionsPanel({ items = [], onChange }
         {sorted.map((s) => {
           const closed = s.stage === "accepted" || s.stage === "camera ready" || s.stage === "published" || s.stage === "rejected";
           const showDue = s.decisionDue && !closed;
-          const info = dueInfo(s.decisionDue, "decision");
+          const info = dueInfo(s.decisionDue, submissionDueNoun(s.stage));
           let cls = "reimb-item";
           if (showDue && info.overdue) cls += " overdue";
           else if (showDue && info.soon) cls += " soon";
