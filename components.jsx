@@ -457,6 +457,13 @@ const ProjectPanel = memo(function ProjectPanel({ items = [], onChange }) {
   const anyOpen = Object.values(expanded).some(Boolean);
   const collapseAll = () => setExpanded({});
 
+  // Ticked (done) projects sink to the bottom. A stable sort keeps the manual
+  // drag order within the active and the done groups, so un-ticking restores a
+  // project to its prior place among the active ones. Drag-reorder still works:
+  // it splices the underlying items array by id, independent of display order.
+  const ordered = (Array.isArray(items) ? items : []).slice()
+    .sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0));
+
   return (
     <div className="panel">
       <div className="panel-header">
@@ -469,7 +476,7 @@ const ProjectPanel = memo(function ProjectPanel({ items = [], onChange }) {
         </div>
       </div>
       <div className="projects-list">
-        {(Array.isArray(items) ? items : []).map((proj) => (
+        {ordered.map((proj) => (
           <ProjectCard
             key={proj.id}
             proj={proj}
