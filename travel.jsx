@@ -4,7 +4,7 @@
 
 const { useState, memo } = React;
 const { uid, MS, safeHref } = window.WhiteboardStore;
-const { formatWhen, relTime, AutoTextarea, Chip, TaskList } = window;
+const { formatWhen, relTime, AutoTextarea, Chip, TaskList, MetaRow } = window;
 
 /* ─── shared bits ─── */
 
@@ -475,23 +475,22 @@ const DocumentsPanel = memo(function DocumentsPanel({ items = [], onChange }) {
         </form>
       )}
       {!items.length && <div className="panel-empty">No documents yet</div>}
-      <ul className="todo-list docs-list">
+      <div className="meta-list">
         {sorted.map((d) => {
           const exp = expiryInfo(d.expiry, now);
-          let cls = "doc-item";
-          if (exp.overdue) cls += " overdue";
-          else if (exp.soon) cls += " soon";
           return (
-            <li key={d.id} data-mb-id={d.id} className={cls}>
-              <Chip label={d.kind} color={DOC_KIND_COLOR[d.kind]} />
-              {d.label && <span className="doc-name">{d.label}</span>}
-              <span className="doc-number">{d.number}</span>
-              <span className="doc-expiry">{exp.text}</span>
-              <button className="btn-delete" aria-label="Delete" onClick={() => remove(d.id)}>×</button>
-            </li>
+            <MetaRow
+              key={d.id}
+              id={d.id}
+              state={exp.overdue ? "overdue" : exp.soon ? "soon" : ""}
+              chip={<Chip label={d.kind} color={DOC_KIND_COLOR[d.kind]} />}
+              title={<>{d.label ? d.label + " " : ""}<span className="meta-row-mono">{d.number}</span></>}
+              when={exp.text}
+              onDelete={() => remove(d.id)}
+            />
           );
         })}
-      </ul>
+      </div>
     </div>
   );
 });

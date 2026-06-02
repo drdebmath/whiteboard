@@ -183,6 +183,49 @@ function EditButton({ onClick, title = 'Edit' }) {
   );
 }
 
+/* ─── MetaRow — the one shared "tagged dated row" ───
+   A single superset for every dense row that is a leading tag + a title + a
+   date stamp (+ optional money) + edit/delete: deadlines, bills, claims,
+   documents, submissions, proposals, calls, contacts. Every slot is optional,
+   so each panel passes only what it has and the row renders the same way
+   everywhere. See DESIGN.md §3 "meta-row".
+
+   Slots, in render order:
+     lead    — checkbox or status-pill (whatever leads the row)
+     chip    — a kind/type Chip
+     title   — the structure-tier primary text  (+ sub: an inline muted aside)
+     when    — the meta-when date stamp
+     value   — a trailing money figure
+     extra   — extra trailing controls (e.g. link icons)
+     onEdit / onDelete — the reveal-on-hover actions
+   `state` ('overdue' | 'soon' | 'done' | 'received') drives the urgency tint
+   and the done/received dim+strike. `editing` replaces the whole body with an
+   inline editor (the .row-edit stacked column). */
+function MetaRow({
+  id, className = "", state = "",
+  lead = null, chip = null, title, sub = null,
+  when = null, value = null, extra = null,
+  onEdit = null, onDelete = null, editing = null,
+}) {
+  const cls = ["meta-row", state, className].filter(Boolean).join(" ");
+  return (
+    <div data-mb-id={id} className={cls}>
+      {editing ? editing : (
+        <>
+          {lead}
+          {chip}
+          <span className="meta-row-title">{title}{sub}</span>
+          {when != null && <span className="meta-row-when">{when}</span>}
+          {value != null && <span className="meta-row-value money">{value}</span>}
+          {extra}
+          {onEdit && <EditButton onClick={onEdit} />}
+          {onDelete && <button className="btn-delete" aria-label="Delete" onClick={onDelete}>×</button>}
+        </>
+      )}
+    </div>
+  );
+}
+
 // Keeps the raw text in local state so typing commas/spaces isn't fought by
 // the parse round-trip; the parsed array is propagated up on each change.
 function CollaboratorsInput({ value = [], onChange }) {
@@ -1212,6 +1255,7 @@ Object.assign(window, {
   Chip,
   TaskList,
   EditButton,
+  MetaRow,
   formatWhen,
   relTime,
   DatePicker,

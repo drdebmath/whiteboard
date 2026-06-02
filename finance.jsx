@@ -4,7 +4,7 @@
 
 const { useState, useEffect, useRef, memo } = React;
 const { uid, num, formatMoney } = window.WhiteboardStore;
-const { formatWhen, Chip } = window;
+const { formatWhen, Chip, MetaRow } = window;
 
 /* ─── shared bits ─── */
 
@@ -327,23 +327,23 @@ const BillsPanel = memo(function BillsPanel({ items = [], onChange, currency = "
           <span className="money">{formatMoney(monthlyTotal, currency)}</span>
         </div>
       )}
-      <ul className="todo-list bills-list">
+      <div className="meta-list">
         {sorted.map((b) => {
           const { text, overdue, soon } = dueInfo(b.due);
-          let cls = "bill-item";
-          if (overdue) cls += " overdue";
-          else if (soon) cls += " soon";
           return (
-            <li key={b.id} data-mb-id={b.id} className={cls}>
-              <span className="bill-name">{b.name}</span>
-              <Chip label={CADENCE_LABEL[b.cadence] || b.cadence} color="var(--muted)" />
-              <span className="bill-amount money">{formatMoney(b.amount, currency)}</span>
-              <span className="bill-due">{text}</span>
-              <button className="btn-delete" aria-label="Delete" onClick={() => remove(b.id)}>×</button>
-            </li>
+            <MetaRow
+              key={b.id}
+              id={b.id}
+              state={overdue ? "overdue" : soon ? "soon" : ""}
+              chip={<Chip label={CADENCE_LABEL[b.cadence] || b.cadence} color="var(--muted)" />}
+              title={b.name}
+              when={text}
+              value={formatMoney(b.amount, currency)}
+              onDelete={() => remove(b.id)}
+            />
           );
         })}
-      </ul>
+      </div>
     </div>
   );
 });
@@ -408,34 +408,35 @@ const ReimbursementPanel = memo(function ReimbursementPanel({ items = [], onChan
           <span className="money">{formatMoney(outstanding, currency)}</span>
         </div>
       )}
-      <ul className="todo-list reimb-list">
+      <div className="meta-list">
         {sorted.map((r) => {
           const showDue = r.due && r.status !== "received";
           const { text: dueText, overdue, soon } = dueInfo(r.due);
-          let cls = "reimb-item status-" + r.status;
-          if (showDue && overdue) cls += " overdue";
-          else if (showDue && soon) cls += " soon";
+          const state = r.status === "received" ? "received" : showDue && overdue ? "overdue" : showDue && soon ? "soon" : "";
           return (
-            <li key={r.id} data-mb-id={r.id} className={cls}>
-              <button
-                className="reimb-status-btn"
-                onClick={() => cycleStatus(r.id)}
-                title="Click to advance status"
-                style={{ "--chip": REIMB_STATUS_COLOR[r.status] }}
-              >
-                {REIMB_STATUS_LABEL[r.status]}
-              </button>
-              <span className="reimb-title">
-                {r.title}
-                {r.party ? <span className="reimb-party"> · {r.party}</span> : null}
-              </span>
-              {showDue && <span className="reimb-due">{dueText}</span>}
-              <span className="reimb-amount money">{formatMoney(r.amount, currency)}</span>
-              <button className="btn-delete" aria-label="Delete" onClick={() => remove(r.id)}>×</button>
-            </li>
+            <MetaRow
+              key={r.id}
+              id={r.id}
+              state={state}
+              lead={
+                <button
+                  className="reimb-status-btn"
+                  onClick={() => cycleStatus(r.id)}
+                  title="Click to advance status"
+                  style={{ "--chip": REIMB_STATUS_COLOR[r.status] }}
+                >
+                  {REIMB_STATUS_LABEL[r.status]}
+                </button>
+              }
+              title={r.title}
+              sub={r.party ? <span className="meta-row-sub"> · {r.party}</span> : null}
+              when={showDue ? dueText : null}
+              value={formatMoney(r.amount, currency)}
+              onDelete={() => remove(r.id)}
+            />
           );
         })}
-      </ul>
+      </div>
     </div>
   );
 });

@@ -649,6 +649,7 @@ html:not(.dark) .datetime-input { color-scheme: light; }
 .reminder-item:hover { background: var(--surface-2); }
 .todo-item input[type="checkbox"],
 .reminder-item input[type="checkbox"],
+.meta-row input[type="checkbox"],
 .project-task-list input[type="checkbox"] {
   width: 17px;
   height: 17px;
@@ -709,17 +710,13 @@ html:not(.dark) .datetime-input { color-scheme: light; }
 }
 .btn-edit svg { display: block; }
 .btn-edit:hover { color: var(--accent); background: var(--accent-soft, var(--surface-2)); }
-.deadline-row .btn-edit,
 .teaching-course-head .btn-edit,
 .chore-item .btn-edit,
 .reading-item .btn-edit,
-.reimb-item .btn-edit,
 .service-card .btn-edit { opacity: 0.5; }
-.deadline-row:hover .btn-edit,
 .teaching-course-head:hover .btn-edit,
 .chore-item:hover .btn-edit,
 .reading-item:hover .btn-edit,
-.reimb-item:hover .btn-edit,
 .service-card:hover .btn-edit { opacity: 1; }
 
 /* ── Meta-when ────────────────────────────────────────────────────────── */
@@ -729,12 +726,9 @@ html:not(.dark) .datetime-input { color-scheme: light; }
    (overdue→danger, soon→accent). New dated panels should reuse these hooks
    rather than coin a ninth name. See DESIGN.md §3 "meta-when". */
 .reminder-time,
-.deadline-due,
+.meta-row-when,
 .service-due,
 .grant-due,
-.bill-due,
-.reimb-due,
-.doc-expiry,
 .trip-range {
   flex-shrink: 0;
   font-size: 11.5px;
@@ -743,15 +737,13 @@ html:not(.dark) .datetime-input { color-scheme: light; }
   font-variant-numeric: tabular-nums;
 }
 .reminder-item.overdue .reminder-time,
+.reminder-item.overdue .meta-row-when,
 .grant-card.overdue .grant-due,
-.bill-item.overdue .bill-due,
-.reimb-item.overdue .reimb-due,
-.doc-item.overdue .doc-expiry { color: var(--danger); }
+.meta-row.overdue .meta-row-when { color: var(--danger); }
 .reminder-item.soon .reminder-time,
+.reminder-item.soon .meta-row-when,
 .grant-card.soon .grant-due,
-.bill-item.soon .bill-due,
-.reimb-item.soon .reimb-due,
-.doc-item.soon .doc-expiry { color: var(--accent); }
+.meta-row.soon .meta-row-when { color: var(--accent); }
 
 /* ── Reminders ────────────────────────────────────────────────────────── */
 .reminder-item.overdue { background: var(--danger-soft); }
@@ -987,7 +979,7 @@ html:not(.dark) .datetime-input { color-scheme: light; }
 .external-link:hover { border-color: var(--accent); color: var(--accent); }
 .contact-icon { flex-shrink: 0; display: inline-flex; align-items: center; padding: 0 3px; color: var(--muted); text-decoration: none; transition: color 0.15s ease; }
 .contact-icon:hover { color: var(--accent); }
-.contact-item .reimb-title { min-width: 0; flex-basis: 60%; overflow-wrap: anywhere; }
+.contact-item .meta-row-title { flex-basis: 60%; overflow-wrap: anywhere; }
 .project-task-list { display: flex; flex-direction: column; gap: 6px; }
 .project-task-list .todo-list { gap: 0; }
 
@@ -1267,38 +1259,42 @@ html:not(.dark) .academic-select { color-scheme: light; }
   letter-spacing: 0.07em;
   color: var(--muted);
 }
-.deadline-row {
+/* ── Meta-row — the one shared "tagged dated row" ──────────────────────────
+   Deadlines, bills, claims, documents, submissions, proposals, calls, contacts
+   all render through it (component: MetaRow). A flat, quiet row that reveals its
+   background and its edit/delete on hover. The leading tag — a coloured chip or
+   the status-pill — carries the category; urgency rides the date stamp
+   (soon→accent, overdue→danger, plus a faint danger wash on the row), per the
+   three-note scale; done/received dims and strikes the title. Trailing metadata
+   wraps to a calm second line when the column is narrow — the title's min-width
+   is the wrap threshold. One ruleset for what used to be five (.deadline-row,
+   .bill-item, .reimb-item, .doc-item, and the .reminder-item reuse).
+   See DESIGN.md §3 "meta-row". */
+.meta-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.meta-row {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 9px 11px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--row-accent, var(--line-2));
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-.deadline-row:hover { background: color-mix(in oklch, var(--surface-2) 55%, var(--surface)); }
-.deadline-row.done { opacity: 0.55; }
-.deadline-row.done .deadline-title {
-  text-decoration: line-through;
-  color: var(--muted);
-}
-/* Title + due share a flexible, wrapping block so they reorganize by width:
-   side by side when there's room, due dropping below the title when the row is
-   narrow (e.g. a phone's single column) instead of squeezing the title to a
-   one-character-per-line sliver. */
-.deadline-body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 9px;
+  gap: 9px;
+  row-gap: 4px;
+  padding: 8px 9px 8px 7px;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s ease;
 }
-.deadline-title { flex: 1 1 8ch; min-width: 0; font-size: 13.5px; color: var(--ink); overflow-wrap: break-word; }
-.deadline-row .btn-delete { opacity: 0.5; }
-.deadline-row:hover .btn-delete { opacity: 1; }
+.meta-row:hover { background: var(--surface-2); }
+.meta-row.overdue { background: var(--danger-soft); }
+.meta-row.done,
+.meta-row.received { opacity: 0.6; }
+.meta-row.done .meta-row-title,
+.meta-row.received .meta-row-title { color: var(--muted); text-decoration: line-through; }
+.meta-row-title { flex: 1 1 auto; min-width: 9ch; font-size: 14px; color: var(--ink); overflow-wrap: break-word; }
+.meta-row-sub { color: var(--muted); font-size: 12px; }
+.meta-row-mono { flex-shrink: 0; font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); }
+.meta-row-value { flex-shrink: 0; font-size: 13px; color: var(--ink-2); }
+.meta-row .btn-edit,
+.meta-row .btn-delete { opacity: 0.5; }
+.meta-row:hover .btn-edit,
+.meta-row:hover .btn-delete { opacity: 1; }
 
 /* Service — institutional service items as cards whose title can wrap to two
    lines without crowding the chip and due date. */
@@ -2299,7 +2295,6 @@ html:not(.dark) .academic-select { color-scheme: light; }
   .btn-edit,
   .btn-delete,
   .btn-chore-undo,
-  .deadline-row .btn-delete,
   .service-card .btn-edit,
   .budget-item .btn-delete,
   .invest-item .btn-delete,
@@ -2456,39 +2451,10 @@ html:not(.dark) .academic-select { color-scheme: light; }
 .loan-due.soon { color: var(--accent); }
 
 /* ── Bills ── */
-/* Dense rows (bills, claims, documents) keep the title on the structure tier and
-   let the trailing metadata — chip · party · due · amount — wrap to a calm second
-   line when the column is narrow, rather than crushing the title to nothing. The
-   title's min-width is the wrap threshold; row-gap spaces the wrapped line. */
-.bill-item {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 9px;
-  row-gap: 4px;
-  padding: 8px 8px 8px 6px;
-  border-radius: var(--radius-sm);
-  transition: background 0.12s ease;
-}
-.bill-item:hover { background: var(--surface-2); }
-.bill-name { flex: 1 1 auto; min-width: 9ch; font-size: 14px; color: var(--ink); overflow-wrap: break-word; }
-.bill-amount { flex-shrink: 0; font-size: 13px; color: var(--ink-2); }
-.bill-item.overdue { background: var(--danger-soft); }
-.bill-item .btn-delete { opacity: 0; }
-.bill-item:hover .btn-delete { opacity: 1; }
-
-/* ── Reimbursements ── */
-.reimb-item {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 9px;
-  row-gap: 4px;
-  padding: 8px 8px 8px 6px;
-  border-radius: var(--radius-sm);
-  transition: background 0.12s ease;
-}
-.reimb-item:hover { background: var(--surface-2); }
+/* Status pill — a chip that is also a button: it cycles a workflow state
+   (reimbursement status, submission stage, proposal status). Lives in a
+   meta-row's leading slot. Visually a chip, behaviourally a button — one
+   pattern, reused. See DESIGN.md §3. */
 .reimb-status-btn {
   --chip: var(--muted);
   flex-shrink: 0;
@@ -2505,13 +2471,6 @@ html:not(.dark) .academic-select { color-scheme: light; }
   transition: filter 0.15s ease;
 }
 .reimb-status-btn:hover { filter: brightness(1.08); }
-.reimb-title { flex: 1 1 auto; min-width: 11ch; font-size: 14px; color: var(--ink); overflow-wrap: break-word; }
-.reimb-party { color: var(--muted); font-size: 12px; }
-.reimb-amount { flex-shrink: 0; font-size: 13px; color: var(--ink-2); }
-.reimb-item.status-received { opacity: 0.6; }
-.reimb-item.status-received .reimb-title { text-decoration: line-through; color: var(--muted); }
-.reimb-item .btn-delete { opacity: 0; }
-.reimb-item:hover .btn-delete { opacity: 1; }
 
 /* ── Investments ── */
 .invest-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
@@ -2618,23 +2577,6 @@ html:not(.dark) .academic-select { color-scheme: light; }
 /* ── Wishlist ── */
 .wishlist-note { color: var(--muted); font-size: 13px; }
 
-/* ── Documents ── */
-.doc-item {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 9px;
-  row-gap: 4px;
-  padding: 8px 8px 8px 6px;
-  border-radius: var(--radius-sm);
-  transition: background 0.12s ease;
-}
-.doc-item:hover { background: var(--surface-2); }
-.doc-name { flex: 1 1 auto; min-width: 9ch; font-size: 14px; color: var(--ink); overflow-wrap: break-word; }
-.doc-number { flex-shrink: 0; font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); }
-.doc-item.overdue { background: var(--danger-soft); }
-.doc-item .btn-delete { opacity: 0; }
-.doc-item:hover .btn-delete { opacity: 1; }
 
 /* Overleaf quick-link icon on collapsed project cards */
 .project-overleaf-icon {

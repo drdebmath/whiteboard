@@ -1,6 +1,6 @@
 const { useState, memo } = React;
 const { uid, MS } = window.WhiteboardStore;
-const { formatWhen, Chip, EditButton } = window;
+const { formatWhen, Chip, EditButton, MetaRow } = window;
 
 // formatWhen() returns { label, rel, overdue, soon }; build a printable string.
 function dueText(due) {
@@ -139,38 +139,36 @@ const DeadlinesPanel = memo(function DeadlinesPanel({ items = [], onChange }) {
           return (
             <div key={bucket} className="deadline-bucket">
               <div className="deadline-bucket-title">{bucket}</div>
-              {bucketItems.map((item) => (
-                <div key={item.id} data-mb-id={item.id} className={"deadline-row" + (item.done ? " done" : "") + (editingId === item.id ? " editing" : "")} style={{ "--row-accent": KIND_COLORS[item.kind] || "var(--line-2)" }}>
-                  {editingId === item.id ? (
-                    <div className="row-edit">
-                      <select className="academic-select" value={editKind} onChange={(e) => setEditKind(e.target.value)}>
-                        {DEADLINE_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
-                      </select>
-                      <input className="academic-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Title" />
-                      <DatePicker className="academic-input" value={editDate} onChange={setEditDate} placeholder="Due date" />
-                      <div className="row-edit-actions">
-                        <button className="panel-text-btn" onClick={() => saveEdit(item.id)}>Save</button>
-                        <button className="panel-text-btn" onClick={() => setEditingId(null)}>Cancel</button>
+              {bucketItems.map((item) => {
+                const w = item.due ? formatWhen(item.due) : null;
+                const state = item.done ? "done" : w && w.overdue ? "overdue" : w && w.soon ? "soon" : "";
+                return (
+                  <MetaRow
+                    key={item.id}
+                    id={item.id}
+                    state={state}
+                    lead={<input type="checkbox" checked={!!item.done} onChange={() => toggleDone(item.id)} aria-label="Mark done" />}
+                    chip={<Chip label={item.kind} color={KIND_COLORS[item.kind]} />}
+                    title={item.title}
+                    when={dueText(item.due)}
+                    onEdit={onChange ? () => startEdit(item) : null}
+                    onDelete={onChange ? () => remove(item.id) : null}
+                    editing={editingId === item.id ? (
+                      <div className="row-edit">
+                        <select className="academic-select" value={editKind} onChange={(e) => setEditKind(e.target.value)}>
+                          {DEADLINE_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
+                        </select>
+                        <input className="academic-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Title" />
+                        <DatePicker className="academic-input" value={editDate} onChange={setEditDate} placeholder="Due date" />
+                        <div className="row-edit-actions">
+                          <button className="panel-text-btn" onClick={() => saveEdit(item.id)}>Save</button>
+                          <button className="panel-text-btn" onClick={() => setEditingId(null)}>Cancel</button>
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <>
-                      <input type="checkbox" checked={!!item.done} onChange={() => toggleDone(item.id)} aria-label="Mark done" />
-                      <Chip label={item.kind} color={KIND_COLORS[item.kind]} />
-                      <div className="deadline-body">
-                        <span className="deadline-title">{item.title}</span>
-                        <span className="deadline-due">{dueText(item.due)}</span>
-                      </div>
-                      {onChange && (
-                        <>
-                          <EditButton onClick={() => startEdit(item)} />
-                          <button className="btn-delete" aria-label="Delete" onClick={() => remove(item.id)}>×</button>
-                        </>
-                      )}
-                    </>
-                  )}
-                </div>
-              ))}
+                    ) : null}
+                  />
+                );
+              })}
             </div>
           );
         })}

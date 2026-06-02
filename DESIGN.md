@@ -80,14 +80,27 @@ them.
   `--panel-shadow`, 1px tinted border. Every panel opens with a `.panel-header`:
   serif title + a 3px accent tick (`::before`) + trailing action pushed right.
 - **Left-border accent (3px)** — the workhorse motif for "this row/card has a
-  category, status, or priority." Used by deadline rows, chores, service cards,
-  goals, project priority, trip alerts, timetable slots, the next-up banner. If an
-  item needs a categorical or urgency signal, this is the first tool to reach for.
+  category, status, or priority." Used by chores, service cards, goals, project
+  priority, trip alerts, timetable slots, the next-up banner. If an item needs a
+  categorical or urgency signal, this is the first tool to reach for.
 - **Chip** (`.kind-chip`) — a small static type tag, colored by `--chip`. For
   kind/type/category labels (Course, Visa, Mutual Fund, cadence).
 - **Status pill button** (`.reimb-status-btn` pattern) — a chip that is *clickable*
   and *cycles* a workflow state (submission stage, reimbursement status, proposal
-  status). Visually a chip, behaviorally a button. One pattern, reused.
+  status). Visually a chip, behaviorally a button. One pattern, reused. Sits in a
+  meta-row's leading slot.
+- **Tagged dated row** (`.meta-row`, component `MetaRow`) — the *one* row for
+  every "leading tag + title + date (+ money) + edit/delete" item: deadlines,
+  bills, claims, documents, submissions, proposals, calls, contacts. A flat
+  hover-row whose every slot — a `lead` (checkbox or status-pill), a `chip`, the
+  `.meta-row-title` (+ a `.meta-row-sub` aside), a `.meta-row-when` stamp, a
+  `.meta-row-value` money figure, `extra` icons, edit, delete — is optional, so a
+  panel passes only what it has and the result reads identically everywhere. The
+  leading tag carries the category colour; urgency rides the stamp plus a faint
+  danger wash on overdue rows; `done`/`received` dims and strikes the title. This
+  replaced five near-identical namespaces (`.deadline-row`, `.bill-item`,
+  `.reimb-item`, `.doc-item`, and a `.reminder-item` reuse) — a new "tagged dated
+  item" renders through `MetaRow`; don't coin a sixth.
 - **Progress bar** (`.budget-bar` / `.teaching-progress`) — a 5–6px track with an
   accent fill, `--gain` when complete, `--loss` when over. For any part-of-whole.
 - **Expandable card** (`.project-card`) — collapsed shows title + a few metadata
@@ -95,15 +108,15 @@ them.
   `.project-section` field groups. Projects, grants, advisees, and trips all share
   this exact shell. New "object with details" entities should too.
 - **Meta-when** — the trailing "Mon 5 · 2d" date stamp on a row: muted, 11.5px,
-  `tabular-nums`, `nowrap`, `flex-shrink:0`; overdue→danger, soon→accent. The eight
-  historical class names (`deadline-due`, `grant-due`, `bill-due`, `reimb-due`,
-  `doc-expiry`, `service-due`, `reminder-time`, `trip-range`) now share **one base
-  definition + two urgency groups** (the "Meta-when" block in `styles.css`). New
-  dated panels reuse these hooks rather than coin a ninth. Because the stamp is
-  `nowrap`, pair it with a wrappable title inside a single flex-wrap block (e.g.
-  `.deadline-body`: title `flex: 1 1 8ch`, stamp `flex-shrink:0`) so the two sit
-  side by side when there's room and the stamp drops to its own line when the row
-  is narrow — never let a fixed stamp squeeze the title to a one-char sliver.
+  `tabular-nums`, `nowrap`, `flex-shrink:0`; overdue→danger, soon→accent. Five
+  class names (`.meta-row-when`, `grant-due`, `service-due`, `reminder-time`,
+  `trip-range`) share **one base definition + two urgency groups** (the "Meta-when"
+  block in `styles.css`). New dated panels reuse these hooks rather than coin a
+  sixth. Because the stamp is `nowrap`, pair it with a wrappable title inside a
+  single flex-wrap row (in `.meta-row`: title `flex:1 1 auto; min-width:9ch`,
+  stamp `flex-shrink:0`) so the two sit side by side when there's room and the
+  stamp drops to its own line when the row is narrow — never let a fixed stamp
+  squeeze the title to a one-char sliver.
 - **Reveal-on-hover affordance** — destructive/secondary controls (`.btn-delete`,
   `.btn-edit`) sit at `opacity:0` (or 0.5 on dense rows) and surface on row hover.
   The resting row stays quiet; tools appear when you reach for them. **A phone has

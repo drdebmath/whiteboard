@@ -4,7 +4,7 @@
 
 const { useState, memo } = React;
 const { uid, num, safeHref } = window.WhiteboardStore;
-const { formatWhen, Chip } = window;
+const { formatWhen, Chip, MetaRow } = window;
 
 /* ─── shared bits ─── */
 
@@ -78,7 +78,7 @@ const AdviseeCard = memo(function AdviseeCard({ student, isOpen, onToggle, onUpd
           onKeyDown={!isOpen ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } } : undefined}
         >
           {student.name || "Unnamed advisee"}
-          {student.program ? <span className="reimb-party"> · {student.program}</span> : null}
+          {student.program ? <span className="meta-row-sub"> · {student.program}</span> : null}
         </span>
         {next && <span className="grant-due">{nextInfo.text}</span>}
         <button className="btn-delete" aria-label="Delete" onClick={onRemove}>×</button>
@@ -117,7 +117,7 @@ const AdviseeCard = memo(function AdviseeCard({ student, isOpen, onToggle, onUpd
                   <li key={m.id} className={mcls}>
                     <input type="checkbox" checked={!!m.done} onChange={() => updateMilestone(m.id, { done: !m.done })} />
                     <span className={"todo-text" + (m.done ? " done" : "")}>{m.text}</span>
-                    {m.due && <span className="reimb-due">{info.text}</span>}
+                    {m.due && <span className="meta-row-when">{info.text}</span>}
                     <button className="btn-delete" aria-label="Delete" onClick={() => removeMilestone(m.id)}>×</button>
                   </li>
                 );
@@ -262,31 +262,33 @@ const SubmissionsPanel = memo(function SubmissionsPanel({ items = [], onChange }
         </form>
       )}
       {!items.length && <div className="panel-empty">No submissions yet</div>}
-      <ul className="todo-list reimb-list">
+      <div className="meta-list">
         {sorted.map((s) => {
           const closed = s.stage === "accepted" || s.stage === "camera ready" || s.stage === "published" || s.stage === "rejected";
           const showDue = s.decisionDue && !closed;
           const info = dueInfo(s.decisionDue, submissionDueNoun(s.stage));
-          let cls = "reimb-item";
-          if (showDue && info.overdue) cls += " overdue";
-          else if (showDue && info.soon) cls += " soon";
           return (
-            <li key={s.id} data-mb-id={s.id} className={cls}>
-              <button className="reimb-status-btn" onClick={() => cycleStage(s.id)} title="Click to advance stage" style={{ "--chip": SUB_STAGE_COLOR[s.stage] }}>
-                {SUB_STAGE_LABEL[s.stage]}
-              </button>
-              <span className="reimb-title">
-                {s.title}
-                {s.venue ? <span className="reimb-party"> · {s.venue}</span> : null}
-                {s.submitted ? <span className="reimb-party"> · submitted {dateVal(s.submitted)}</span> : null}
-              </span>
-              {showDue && <span className="reimb-due">{info.text}</span>}
-              <EditButton onClick={() => startEdit(s)} />
-              <button className="btn-delete" aria-label="Delete" onClick={() => remove(s.id)}>×</button>
-            </li>
+            <MetaRow
+              key={s.id}
+              id={s.id}
+              state={showDue && info.overdue ? "overdue" : showDue && info.soon ? "soon" : ""}
+              lead={
+                <button className="reimb-status-btn" onClick={() => cycleStage(s.id)} title="Click to advance stage" style={{ "--chip": SUB_STAGE_COLOR[s.stage] }}>
+                  {SUB_STAGE_LABEL[s.stage]}
+                </button>
+              }
+              title={s.title}
+              sub={<>
+                {s.venue ? <span className="meta-row-sub"> · {s.venue}</span> : null}
+                {s.submitted ? <span className="meta-row-sub"> · submitted {dateVal(s.submitted)}</span> : null}
+              </>}
+              when={showDue ? info.text : null}
+              onEdit={() => startEdit(s)}
+              onDelete={() => remove(s.id)}
+            />
           );
         })}
-      </ul>
+      </div>
     </div>
   );
 });
@@ -338,30 +340,30 @@ const ProposalsPanel = memo(function ProposalsPanel({ items = [], onChange, curr
         </form>
       )}
       {!items.length && <div className="panel-empty">No proposals yet</div>}
-      <ul className="todo-list reimb-list">
+      <div className="meta-list">
         {sorted.map((p) => {
           const open = p.status === "drafting" || p.status === "submitted";
           const showDue = p.callDeadline && open;
           const info = dueInfo(p.callDeadline);
-          let cls = "reimb-item";
-          if (showDue && info.overdue) cls += " overdue";
-          else if (showDue && info.soon) cls += " soon";
           return (
-            <li key={p.id} data-mb-id={p.id} className={cls}>
-              <button className="reimb-status-btn" onClick={() => cycleStatus(p.id)} title="Click to advance status" style={{ "--chip": PROP_STATUS_COLOR[p.status] }}>
-                {PROP_STATUS_LABEL[p.status]}
-              </button>
-              <span className="reimb-title">
-                {p.title}
-                {p.agency ? <span className="reimb-party"> · {p.agency}</span> : null}
-              </span>
-              {showDue && <span className="reimb-due">{info.text}</span>}
-              {num(p.amount) > 0 && <span className="reimb-amount money">{formatMoney(p.amount, currency)}</span>}
-              <button className="btn-delete" aria-label="Delete" onClick={() => remove(p.id)}>×</button>
-            </li>
+            <MetaRow
+              key={p.id}
+              id={p.id}
+              state={showDue && info.overdue ? "overdue" : showDue && info.soon ? "soon" : ""}
+              lead={
+                <button className="reimb-status-btn" onClick={() => cycleStatus(p.id)} title="Click to advance status" style={{ "--chip": PROP_STATUS_COLOR[p.status] }}>
+                  {PROP_STATUS_LABEL[p.status]}
+                </button>
+              }
+              title={p.title}
+              sub={p.agency ? <span className="meta-row-sub"> · {p.agency}</span> : null}
+              when={showDue ? info.text : null}
+              value={num(p.amount) > 0 ? formatMoney(p.amount, currency) : null}
+              onDelete={() => remove(p.id)}
+            />
           );
         })}
-      </ul>
+      </div>
     </div>
   );
 });
@@ -401,24 +403,24 @@ const CFPPanel = memo(function CFPPanel({ items = [], onChange }) {
         </form>
       )}
       {!items.length && <div className="panel-empty">No calls tracked yet</div>}
-      <ul className="todo-list reimb-list">
+      <div className="meta-list">
         {sorted.map((c) => {
           const live = nextCfpDeadline(c);
           const info = dueInfo(live);
           const which = live && live === c.abstractDue ? "abstract" : live ? "paper" : "";
-          let cls = "reimb-item";
-          if (info.overdue) cls += " overdue";
-          else if (info.soon) cls += " soon";
           return (
-            <li key={c.id} data-mb-id={c.id} className={cls}>
-              <span className="reimb-title">{c.name}</span>
-              {which && <Chip label={which} color="var(--muted)" />}
-              {live && <span className="reimb-due">{info.text}</span>}
-              <button className="btn-delete" aria-label="Delete" onClick={() => remove(c.id)}>×</button>
-            </li>
+            <MetaRow
+              key={c.id}
+              id={c.id}
+              state={info.overdue ? "overdue" : info.soon ? "soon" : ""}
+              chip={which ? <Chip label={which} color="var(--muted)" /> : null}
+              title={c.name}
+              when={live ? info.text : null}
+              onDelete={() => remove(c.id)}
+            />
           );
         })}
-      </ul>
+      </div>
     </div>
   );
 });
@@ -468,9 +470,9 @@ const ReviewsPanel = memo(function ReviewsPanel({ items = [], onChange }) {
             <li key={r.id} data-mb-id={r.id} className={cls}>
               <input type="checkbox" checked={!!r.done} onChange={() => toggle(r.id)} />
               <span className={"todo-text" + (r.done ? " done" : "")}>
-                {r.venue}{r.paper ? <span className="reimb-party"> · {r.paper}</span> : null}
+                {r.venue}{r.paper ? <span className="meta-row-sub"> · {r.paper}</span> : null}
               </span>
-              {r.due && <span className="reimb-due">{info.text}</span>}
+              {r.due && <span className="meta-row-when">{info.text}</span>}
               <button className="btn-delete" aria-label="Delete" onClick={() => remove(r.id)}>×</button>
             </li>
           );
@@ -525,9 +527,9 @@ const LettersPanel = memo(function LettersPanel({ items = [], onChange }) {
             <li key={l.id} data-mb-id={l.id} className={cls}>
               <input type="checkbox" checked={!!l.done} onChange={() => toggle(l.id)} />
               <span className={"todo-text" + (l.done ? " done" : "")}>
-                {l.student}{l.purpose ? <span className="reimb-party"> · {l.purpose}</span> : null}
+                {l.student}{l.purpose ? <span className="meta-row-sub"> · {l.purpose}</span> : null}
               </span>
-              {l.due && <span className="reimb-due">{info.text}</span>}
+              {l.due && <span className="meta-row-when">{info.text}</span>}
               <button className="btn-delete" aria-label="Delete" onClick={() => remove(l.id)}>×</button>
             </li>
           );
@@ -546,29 +548,31 @@ const ContactsPanel = memo(function ContactsPanel({ items = [], onChange }) {
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState("");
   const [editingId, setEditingId] = useState(null);
-
-  const resetForm = () => { setName(""); setAffiliation(""); setEmail(""); setWebsite(""); setEditingId(null); setShowForm(false); };
+  const [editName, setEditName] = useState("");
+  const [editAffiliation, setEditAffiliation] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editWebsite, setEditWebsite] = useState("");
 
   const add = (e) => {
     e.preventDefault();
     const n = name.trim();
     if (!n) return;
-    const fields = { name: n, affiliation: affiliation.trim(), email: email.trim(), website: website.trim() };
-    if (editingId) {
-      onChange(items.map((i) => (i.id === editingId ? { ...i, ...fields } : i)));
-    } else {
-      onChange([...items, { id: uid(), ...fields, note: "", created: Date.now() }]);
-    }
-    resetForm();
+    onChange([...items, { id: uid(), name: n, affiliation: affiliation.trim(), email: email.trim(), website: website.trim(), note: "", created: Date.now() }]);
+    setName(""); setAffiliation(""); setEmail(""); setWebsite(""); setShowForm(false);
   };
-  const startEdit = (c) => { setEditingId(c.id); setShowForm(true); setName(c.name || ""); setAffiliation(c.affiliation || ""); setEmail(c.email || ""); setWebsite(c.website || ""); };
-  const remove = (id) => { if (id === editingId) resetForm(); onChange(items.filter((i) => i.id !== id)); };
+  const startEdit = (c) => { setEditingId(c.id); setEditName(c.name || ""); setEditAffiliation(c.affiliation || ""); setEditEmail(c.email || ""); setEditWebsite(c.website || ""); };
+  const saveEdit = (id) => {
+    const n = editName.trim();
+    if (n) onChange(items.map((i) => (i.id === id ? { ...i, name: n, affiliation: editAffiliation.trim(), email: editEmail.trim(), website: editWebsite.trim() } : i)));
+    setEditingId(null);
+  };
+  const remove = (id) => { if (id === editingId) setEditingId(null); onChange(items.filter((i) => i.id !== id)); };
 
   return (
     <div className="panel">
       <div className="panel-header">
         <span>Collaborators &amp; Contacts</span>
-        <button className="academic-add-btn" aria-label={showForm ? "Cancel" : "Add"} onClick={() => (showForm ? resetForm() : setShowForm(true))}>{showForm ? "×" : "+"}</button>
+        <button className="academic-add-btn" aria-label={showForm ? "Cancel" : "Add"} onClick={() => setShowForm(!showForm)}>{showForm ? "×" : "+"}</button>
       </div>
       {showForm && (
         <form className="academic-form" onSubmit={add}>
@@ -576,39 +580,54 @@ const ContactsPanel = memo(function ContactsPanel({ items = [], onChange }) {
           <input className="academic-input sm" value={affiliation} onChange={(e) => setAffiliation(e.target.value)} placeholder="Affiliation" />
           <input className="academic-input sm" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
           <input className="academic-input sm" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="Website" />
-          <button type="submit" className="academic-submit">{editingId ? "Save" : "Add"}</button>
+          <button type="submit" className="academic-submit">Add</button>
         </form>
       )}
       {!items.length && <div className="panel-empty">No contacts yet</div>}
-      <ul className="todo-list">
+      <div className="meta-list">
         {items.map((c) => (
-          <li key={c.id} data-mb-id={c.id} className="reimb-item contact-item">
-            <span className="reimb-title">
-              {c.name}
-              {c.affiliation ? <span className="reimb-party"> · {c.affiliation}</span> : null}
-            </span>
-            {c.email && (
-              <a className="contact-icon" href={"mailto:" + encodeURIComponent(c.email).replace(/%40/g, "@")} title={c.email} aria-label={"Email " + c.name}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                  <path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
-                </svg>
-              </a>
-            )}
-            {safeHref(c.website) && (
-              <a className="contact-icon" href={safeHref(c.website)} target="_blank" rel="noopener noreferrer" title={c.website} aria-label={c.name + " website"}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="2" y1="12" x2="22" y2="12" />
-                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                </svg>
-              </a>
-            )}
-            <EditButton onClick={() => startEdit(c)} />
-            <button className="btn-delete" aria-label="Delete" onClick={() => remove(c.id)}>×</button>
-          </li>
+          <MetaRow
+            key={c.id}
+            id={c.id}
+            className="contact-item"
+            title={c.name}
+            sub={c.affiliation ? <span className="meta-row-sub"> · {c.affiliation}</span> : null}
+            extra={<>
+              {c.email && (
+                <a className="contact-icon" href={"mailto:" + encodeURIComponent(c.email).replace(/%40/g, "@")} title={c.email} aria-label={"Email " + c.name}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                    <path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                </a>
+              )}
+              {safeHref(c.website) && (
+                <a className="contact-icon" href={safeHref(c.website)} target="_blank" rel="noopener noreferrer" title={c.website} aria-label={c.name + " website"}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="2" y1="12" x2="22" y2="12" />
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                  </svg>
+                </a>
+              )}
+            </>}
+            onEdit={() => startEdit(c)}
+            onDelete={() => remove(c.id)}
+            editing={editingId === c.id ? (
+              <div className="row-edit">
+                <input className="academic-input" value={editName} autoFocus onChange={(e) => setEditName(e.target.value)} placeholder="Name" />
+                <input className="academic-input" value={editAffiliation} onChange={(e) => setEditAffiliation(e.target.value)} placeholder="Affiliation" />
+                <input className="academic-input" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="Email" />
+                <input className="academic-input" value={editWebsite} onChange={(e) => setEditWebsite(e.target.value)} placeholder="Website" />
+                <div className="row-edit-actions">
+                  <button className="panel-text-btn" onClick={() => saveEdit(c.id)}>Save</button>
+                  <button className="panel-text-btn" onClick={() => setEditingId(null)}>Cancel</button>
+                </div>
+              </div>
+            ) : null}
+          />
         ))}
-      </ul>
+      </div>
     </div>
   );
 });
